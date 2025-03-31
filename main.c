@@ -1,3 +1,4 @@
+#include <stdbool.h> 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -104,7 +105,7 @@ unsigned short int inverseBitPermute(unsigned short int x) {
     return result;
 }
 
-unsigned short int encryptCipherFour(unsigned short int message, int roundCount, unsigned short int *keys) {
+unsigned short int encryptCipherFour(unsigned short int message, int roundCount, unsigned short int *keys, bool lastRound) {
     /*
         given message as int, int roundCount as number of rounds to be iterated over
         and roundCount number of keys, returns encrypted message using CipherFour
@@ -130,7 +131,9 @@ unsigned short int encryptCipherFour(unsigned short int message, int roundCount,
     }
 
     // return without last round
-    // return u;
+    if (!lastRound) {
+        return u;
+    }
 
     // last round
     a = u ^ keys[roundCount - 1];
@@ -194,39 +197,39 @@ unsigned short int *findStructures(int s) {
     unsigned short int m = (((t >> 4) % 16) << 4) ^ t;
     // return m;
 
-    // for k_0_nibble, i, j work with the lowest 4 bits
     for (unsigned short int k_0_nibble = 0; k_0_nibble < 16; k_0_nibble++)
     {
-            unsigned short int success_count = 0;
-            unsigned short int i, j;
-            int try_count = 0;
-            while (success_count < s) {
-                i = try_count / 16;
-                j = try_count % 16;
-                unsigned short int a_0 = i ^ k_0_nibble;
-                unsigned short int a_1 = j ^ k_0_nibble;
+        unsigned short int success_count = 0;
+        unsigned short int i, j;
+        int try_count = -1;
+        while (success_count < s) {
+            try_count++;
 
-                a_0 = shortIntSBox(a_0);
-                a_1 = shortIntSBox(a_1);
+            // both 0 <= i, j <= 15
+            i = try_count / 16;
+            j = try_count % 16;
 
-                // now we need P(a_0) ^ P(a_1) = (0, 0, 2, 0) where P is the permutation
-                // since it is linear and P(0000 0000 0010 0000) = 0000 0000 0010 0000
-                // it is equivalent to a_0 ^ a_1 = (0, 0, 2, 0)
-
-                if (((a_0 ^ a_1) % 16) == 2) {
-                    // assign m_i and m_j
-                    structures[s * k_0_nibble + 2 * success_count] = m ^ ((i % 16) << 4);
-                    structures[s * k_0_nibble + 2 * success_count + 1] = m ^ ((j % 16) << 4);
-                    success_count++;
-                }
-
-                try_count++;
-
-                if (try_count == 256) {
-                    printf("Could not find s pairs for (m_i, m_j)");
-                    break;
-                }
+            // skip i = j
+            if (i == j) {
+                continue;
             }
+
+            unsigned short int u_0 = shortIntSBox(i ^ k_0_nibble);
+            unsigned short int u_1 = shortIntSBox(j ^ k_0_nibble);
+
+            if ((u_0 ^ u_1) == 2) {
+                // assign m_i and m_j
+                structures[2 * s * k_0_nibble + 2 * success_count] = (short) m ^ ((i % 16) << 4);
+                structures[2 * s * k_0_nibble + 2 * success_count + 1] = (short) m ^ ((j % 16) << 4);
+                success_count++;
+            }
+
+
+            if (try_count == 255) {
+                printf("Could not find s pairs for (m_i, m_j)");
+                break;
+            }
+        }
     }
 
     return structures;
@@ -237,8 +240,9 @@ int main()
 {
     srand(time(NULL));   // Initialization, should only be called once.
 
-    unsigned short int *structures = findStructures(1);
-    for (int i = 0; i < 16; i++)
+    int s = 1;
+    unsigned short int *structures = findStructures(s);
+    for (int i = 0; i < 16 * s; i++)
     {
         printBytes(structures[2 * i]);
         printf(", ");
@@ -246,7 +250,18 @@ int main()
         printf("\n");
     }
     
-    // printBytes(m);
+    unsigned short int keys[] = {0};
+    for (int i = 0; i < 16 * s; i++)
+    {
+        unsigned short int k_0_nibble = i / 2;
+        unsigned short int M_1 = encryptCipherFour(structures[2 * i], 2, &k_0_nibble, 0);
+        unsigned short int M_2 = encryptCipherFour(structures[2 * i + 1], 2, &k_0_nibble, 0);
+        printf("M_1 ^ M_2: ");
+        printBytes(M_1 ^ M_2);
+        printf("\n");
+    }
+    
+
 }
 
 // Labwork 1.(ii)
@@ -293,8 +308,8 @@ int main()
 //         // offset message
 //         offsetCounter = counter ^ offset;
     
-//         cypherText = encryptCipherFour(counter, r, k);
-//         cypherTextOffset = encryptCipherFour(offsetCounter, r, k);
+//         cypherText = encryptCipherFour(counter, r, k, 1);
+//         cypherTextOffset = encryptCipherFour(offsetCounter, r, k, 1);
 
 //         // apply filtering
 //         // in order for the differential to hold, we need
@@ -391,8 +406,8 @@ int main()
 //         // offset message
 //         offsetCounter = counter ^ offset;
     
-//         cypherText = encryptCipherFour(counter, r, k);
-//         cypherTextOffset = encryptCipherFour(offsetCounter, r, k);
+//         cypherText = encryptCipherFour(counter, r, k, 1);
+//         cypherTextOffset = encryptCipherFour(offsetCounter, r, k, 1);
 
 //         for (int i = 0; i < 16; i++)
 //         {
@@ -433,8 +448,8 @@ int main()
 //     //     // offset message
 //     //     unsigned short int offset_counter = counter ^ offset;
     
-//     //     unsigned short int cypherText = encryptCipherFour(counter, r, k);
-//     //     unsigned short int cypherTextOffset = encryptCipherFour(offset_counter, r, k);
+//     //     unsigned short int cypherText = encryptCipherFour(counter, r, k, 1);
+//     //     unsigned short int cypherTextOffset = encryptCipherFour(offset_counter, r, k, 1);
 //     //     if ((cypherText ^ cypherTextOffset) == 32) {
 //     //         successful++;
 //     //     }
@@ -463,7 +478,7 @@ int main()
 //     // print round keys
 //     // printArray(k, r + 1);
 
-//     unsigned short int cypherText = encryptCipherFour(m, r, k);
+//     unsigned short int cypherText = encryptCipherFour(m, r, k, 1);
 //     printf("cypherText: %d\n", cypherText);
     
 //     printf("decrypted cypherText: %d\n", decryptCipherFour(cypherText, r, k));   
