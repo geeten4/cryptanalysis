@@ -213,6 +213,12 @@ unsigned short int *findStructures(int s) {
             unsigned short int a_0 = i ^ k_0_nibble;
             unsigned short int a_1 = j ^ k_0_nibble;
 
+            try_count++;
+            if (try_count == 256) {
+                printf("Could not find s pairs for (m_i, m_j)");
+                break;
+            }
+            
             // skip i = j
             if (i == j) {
                 continue;
@@ -229,12 +235,7 @@ unsigned short int *findStructures(int s) {
                 success_count++;
             }
 
-            try_count++;
 
-            if (try_count == 256) {
-                printf("Could not find s pairs for (m_i, m_j)");
-                break;
-            }
         }
     }
 
@@ -327,12 +328,17 @@ int main()
         }
     }
     
+    // TODO: only 64 guesses, should be 1024 also for each possible nibble of k_0 ??? 
+
     printf("k_5_nibbles_counters:\n");
     for (unsigned short int i = 0; i < 64; i++)
     {
         printf("nibble a_%d guess ", i / 16);
-        printBytes(i % 16);
+        printBytes((i % 16) << 4 * (3 - (i / 16)));
         printf(" counter is %ld\n", k_5_nibbles_counters[i]);
+        if((i+1) % 16 == 0) {
+            printf("\n");
+        }
     }
 }
 
