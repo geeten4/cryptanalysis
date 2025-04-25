@@ -2,6 +2,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
+
 
 // S substitution
 unsigned int S[] = {0x6, 0x4, 0xc, 0x5, 0x0, 0x7, 0x2, 0xe, 0x1, 0xf, 0x3, 0xd, 0x8, 0xa, 0x9, 0xb};
@@ -104,7 +106,7 @@ unsigned short int inverseBitPermute(unsigned short int x) {
     return result;
 }
 
-unsigned short int encryptCipherFour(unsigned short int message, int roundCount, unsigned short int *keys) {
+unsigned short int encryptCipherFour(unsigned short int message, int roundCount, unsigned short int *keys, bool lastRound) {
     /*
         given message as int, int roundCount as number of rounds to be iterated over
         and roundCount number of keys, returns encrypted message using CipherFour
@@ -130,7 +132,9 @@ unsigned short int encryptCipherFour(unsigned short int message, int roundCount,
     }
 
     // return without last round
-    // return u;
+    if (!lastRound) {
+        return u;
+    }
 
     // last round
     a = u ^ keys[roundCount - 1];
@@ -192,41 +196,40 @@ unsigned short int *findStructures(int s) {
     // randomly choose t_0, t_1, t_2 
     unsigned short int t = (short) rand();
     unsigned short int m = (((t >> 4) % 16) << 4) ^ t;
-    // return m;
 
     // for k_0_nibble, i, j work with the lowest 4 bits
+    unsigned short int success_count = 0;
+    int try_count = 0;
     for (unsigned short int k_0_nibble = 0; k_0_nibble < 16; k_0_nibble++)
     {
-            unsigned short int success_count = 0;
-            unsigned short int i, j;
-            int try_count = 0;
-            while (success_count < s) {
-                i = try_count / 16;
-                j = try_count % 16;
-                unsigned short int a_0 = i ^ k_0_nibble;
-                unsigned short int a_1 = j ^ k_0_nibble;
+        
+        success_count = 0;
+        try_count = 0;
+        unsigned short int i, j;
+        while (success_count < s) {
+            i = try_count / 16;
+            j = try_count % 16;
+            unsigned short int a_0 = i ^ k_0_nibble;
+            unsigned short int a_1 = j ^ k_0_nibble;
 
-                a_0 = shortIntSBox(a_0);
-                a_1 = shortIntSBox(a_1);
+            // now we need P(a_0) ^ P(a_1) = (0, 0, 2, 0) where P is the permutation
+            // since it is linear and P(0000 0000 0010 0000) = 0000 0000 0010 0000
+            // it is equivalent to a_0 ^ a_1 = (0, 0, 2, 0)
 
-                // now we need P(a_0) ^ P(a_1) = (0, 0, 2, 0) where P is the permutation
-                // since it is linear and P(0000 0000 0010 0000) = 0000 0000 0010 0000
-                // it is equivalent to a_0 ^ a_1 = (0, 0, 2, 0)
-
-                if (((a_0 ^ a_1) % 16) == 2) {
-                    // assign m_i and m_j
-                    structures[s * k_0_nibble + 2 * success_count] = m ^ ((i % 16) << 4);
-                    structures[s * k_0_nibble + 2 * success_count + 1] = m ^ ((j % 16) << 4);
-                    success_count++;
-                }
-
-                try_count++;
-
-                if (try_count == 256) {
-                    printf("Could not find s pairs for (m_i, m_j)");
-                    break;
-                }
+            if (((shortIntSBox(a_0) ^ shortIntSBox(a_1)) % 16) == 2) {
+                // assign m_i and m_j
+                structures[2 * s * k_0_nibble + 2 * success_count] = m ^ (i << 4);
+                structures[2 * s * k_0_nibble + 2 * success_count + 1] = m ^ (j << 4);
+                success_count++;
             }
+
+            try_count++;
+
+            if (try_count == 256) {
+                printf("Could not find s pairs for (m_i, m_j)");
+                break;
+            }
+        }
     }
 
     return structures;
@@ -237,16 +240,94 @@ int main()
 {
     srand(time(NULL));   // Initialization, should only be called once.
 
-    unsigned short int *structures = findStructures(1);
-    for (int i = 0; i < 16; i++)
+    size_t s = 5;
+    unsigned short int *structures = findStructures(s);
+    // for (int i = 0; i < 16 * s; i++)
+    // {
+    //     printBytes(structures[2 * i]);
+    //     printf(", ");
+    //     printBytes(structures[2 * i + 1]);
+    //     printf("\n");
+    // }   
+    
+    // number of rounds
+    int r = 5;
+    
+    // generate round keys
+    unsigned short int *k = generateRoundKeys(r + 1);
+    for (int i = 0; i < r + 1; i++)
     {
-        printBytes(structures[2 * i]);
-        printf(", ");
-        printBytes(structures[2 * i + 1]);
+        printf("key k_%d: ", i);
+        printBytes(k[i]);
         printf("\n");
     }
+
+    unsigned short int cypherText1;
+    unsigned short int cypherText2;
+    unsigned short int truncatedDiffConst = 0b0100010001000100;
+
+    // counter for k_0 third nibble k_0_nibble
+    size_t *k_0_nibble_counters = malloc(16 * sizeof(size_t));
+    for (size_t i = 0; i < 16; i++)
+    {
+        k_0_nibble_counters[i] = 0;
+    }
     
-    // printBytes(m);
+    // initialize counters for all nibbles of k_5
+    // 4 * 16 = 64 counters, k_5 = (a_0, a_1, a_2, a_3)
+    // then first 16 counters correspond to values a_0 = 0000, .... , 1111
+    size_t *k_5_nibbles_counters = malloc(64 * sizeof(size_t));
+    for (size_t i = 0; i < 64; i++)
+    {
+        k_5_nibbles_counters[i] = 0;
+    }
+    
+
+    unsigned short int a_1;
+    unsigned short int a_2;
+    unsigned short int shiftedCypherText1;
+    unsigned short int shiftedCypherText2;
+    // iterate over all k_0 nibble values
+    for (size_t p = 0; p < 16; p++)
+    {
+        for (int i = 0; i < s; i++)
+        {
+            cypherText1 = encryptCipherFour(structures[2 * s * p + 2 * i], r, k, true);
+            cypherText2 = encryptCipherFour(structures[2 * s * p + 2 * i + 1], r, k, true);
+
+            for (size_t k_5_nibbles_count = 0; k_5_nibbles_count < 4; k_5_nibbles_count++)
+            {
+                for (unsigned short int k_5_nibble_guess = 0; k_5_nibble_guess < 16; k_5_nibble_guess++)
+                {
+                    // k_5_nibble_guess = guess nibble of k_5
+                    // k_5_nibbles_count which nibble we are trying to guess
+                    // if guessed correctly, then this characteristic holds
+                    // invS[cypherText1 ^ k_5_nibble_guess] ^ invS[cypherText2 ^ k_5_nibble_guess] = * 0 * *
+                    
+                    // first shift the desired nibble to the end
+                    shiftedCypherText1 = (cypherText1 >> (4 * (3 - k_5_nibbles_count))) % 16;
+                    shiftedCypherText2 = (cypherText2 >> (4 * (3 - k_5_nibbles_count))) % 16;
+
+                    a_1 = shortIntInvSBox(shiftedCypherText1 ^ k_5_nibble_guess);
+                    a_2 = shortIntInvSBox(shiftedCypherText2 ^ k_5_nibble_guess);
+
+                    if (((a_1 ^ a_2) & 4) == 0) {
+                        k_5_nibbles_counters[16 * k_5_nibbles_count + k_5_nibble_guess]++;
+                    }
+                }
+                
+            }
+            
+        }
+    }
+    
+    printf("k_5_nibbles_counters:\n");
+    for (unsigned short int i = 0; i < 64; i++)
+    {
+        printf("nibble a_%d guess ", i / 16);
+        printBytes(i % 16);
+        printf(" counter is %ld\n", k_5_nibbles_counters[i]);
+    }
 }
 
 // Labwork 1.(ii)
@@ -293,8 +374,8 @@ int main()
 //         // offset message
 //         offsetCounter = counter ^ offset;
     
-//         cypherText = encryptCipherFour(counter, r, k);
-//         cypherTextOffset = encryptCipherFour(offsetCounter, r, k);
+//         cypherText = encryptCipherFour(counter, r, k, true);
+//         cypherTextOffset = encryptCipherFour(offsetCounter, r, k, true);
 
 //         // apply filtering
 //         // in order for the differential to hold, we need
@@ -391,8 +472,8 @@ int main()
 //         // offset message
 //         offsetCounter = counter ^ offset;
     
-//         cypherText = encryptCipherFour(counter, r, k);
-//         cypherTextOffset = encryptCipherFour(offsetCounter, r, k);
+//         cypherText = encryptCipherFour(counter, r, k, true);
+//         cypherTextOffset = encryptCipherFour(offsetCounter, r, k, true);
 
 //         for (int i = 0; i < 16; i++)
 //         {
@@ -433,8 +514,8 @@ int main()
 //     //     // offset message
 //     //     unsigned short int offset_counter = counter ^ offset;
     
-//     //     unsigned short int cypherText = encryptCipherFour(counter, r, k);
-//     //     unsigned short int cypherTextOffset = encryptCipherFour(offset_counter, r, k);
+//     //     unsigned short int cypherText = encryptCipherFour(counter, r, k, true);
+//     //     unsigned short int cypherTextOffset = encryptCipherFour(offset_counter, r, k, true);
 //     //     if ((cypherText ^ cypherTextOffset) == 32) {
 //     //         successful++;
 //     //     }
@@ -463,7 +544,7 @@ int main()
 //     // print round keys
 //     // printArray(k, r + 1);
 
-//     unsigned short int cypherText = encryptCipherFour(m, r, k);
+//     unsigned short int cypherText = encryptCipherFour(m, r, k, true);
 //     printf("cypherText: %d\n", cypherText);
     
 //     printf("decrypted cypherText: %d\n", decryptCipherFour(cypherText, r, k));   
