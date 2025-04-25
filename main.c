@@ -1,3 +1,4 @@
+#include <stdbool.h> 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -211,6 +212,11 @@ unsigned short int *findStructures(int s) {
             j = try_count % 16;
             unsigned short int a_0 = i ^ k_0_nibble;
             unsigned short int a_1 = j ^ k_0_nibble;
+
+            // skip i = j
+            if (i == j) {
+                continue;
+            }
 
             // now we need P(a_0) ^ P(a_1) = (0, 0, 2, 0) where P is the permutation
             // since it is linear and P(0000 0000 0010 0000) = 0000 0000 0010 0000
