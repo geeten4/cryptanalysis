@@ -2,7 +2,7 @@ Small project for Cryptanalysis course
 
 To compile using gcc and run the labworks, use
 
-```
+```console
 cryptanalysis.sh labworkX
 ```
 
