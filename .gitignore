@@ -1,2 +1,2 @@
 # ignore all binaries
-./bin
+bin/
