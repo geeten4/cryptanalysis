@@ -1,3 +1,9 @@
 Small project for Cryptanalysis course
 
-Compile and run using the shell script ./main.sh
+To compile using gcc and run the labworks, use
+
+```
+cryptanalysis.sh labworkX
+```
+
+where X is the number for the corresponding labwork
