@@ -174,11 +174,71 @@ void printBytes(unsigned short int x) {
     }
 }
 
-void main() {
+int xor_bits(unsigned x) {
+    return __builtin_parity(x);
+}
+
+void firstExercise() {
     unsigned short int *keys, message, cypher;
     int numberOfRounds = 5;
-    keys = generateRoundKeys(numberOfRounds);
+    keys = generateRoundKeys(numberOfRounds + 1);
     message = 123;
+    printf("Message to encrypt: %d\n", message);
     cypher = encryptCipherD(message, numberOfRounds, keys, true);
-    printf("decrypted: %d\n", decryptCipherD(cypher, numberOfRounds, keys));
+    printf("Encrypted message: %d\n", cypher);
+    printf("Encrypted message: %d\n", decryptCipherD(cypher, numberOfRounds, keys));
+}
+
+void secondExercise() {
+    unsigned short int *keys, m, y, lastKey;
+    // initialize counters for the last key
+    // 16 counters for a_3, where k_last = (a_3, a_2, a_1, a_0)
+    unsigned short int lastKeyCounters[16] = {0};
+
+    int numberOfRounds = 4, randomMessageCount = 100000;
+    keys = generateRoundKeys(numberOfRounds + 1); 
+    
+    for (int i = 0; i < numberOfRounds + 1; i++)
+    {
+        printf("key k_%d: ", i);
+        printBytes(keys[i]);
+        printf("\n");
+    }
+    
+
+    for (size_t i = 0; i < randomMessageCount; i++)
+    {
+        // random message
+        m = (unsigned short int) rand();
+
+        // encrypt
+        y = encryptCipherD(m, numberOfRounds, keys, true);
+
+        unsigned short int u;
+        // work backwards for all possible last key nibbles
+        unsigned short int mask = (unsigned short int ) 32768;
+        for (size_t lastKeyNibble = 0; lastKeyNibble < 16; lastKeyNibble++)
+        {
+            u = y ^ (lastKeyNibble << 12);
+            if (xor_bits(mask & m) == xor_bits(mask & u))
+                lastKeyCounters[lastKeyNibble]++;
+        }
+    }
+
+    //print counters
+    printf("last key first nibble counters:\n");
+    for (size_t i = 0; i < 16; i++)
+    {
+        printBytes(i << 12);
+        printf(": %d\n", lastKeyCounters[i]);
+    }
+    
+}
+
+void main() {
+    srand(time(NULL));   // Initialization, should only be called once.
+
+    // firstExercise();
+
+    secondExercise();
 }
