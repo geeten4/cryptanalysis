@@ -178,7 +178,20 @@ int xor_bits(unsigned x) {
     return __builtin_parity(x);
 }
 
+int arrayMaxValIndex(size_t *array, int length) {
+    int maxIndex = 0;
+    for (size_t i = 0; i < length; i++)
+    {
+        if (array[i] > array[maxIndex])
+            maxIndex = i;
+    }
+    return maxIndex;
+}
+
 void firstExercise() {
+    /*
+        Implement encryption and decryption by CipherD defined in [3, p. 137– 139]. (Please do both 4 and 5 rounds.)
+    */
     unsigned short int *keys, message, cypher;
     int numberOfRounds = 5;
     keys = generateRoundKeys(numberOfRounds + 1);
@@ -190,77 +203,51 @@ void firstExercise() {
 }
 
 void secondExercise() {
-    unsigned short int *keys, m, y, lastKey;
-    // initialize counters for the last key
-    // 16 counters for a_3, where k_last = (a_3, a_2, a_1, a_0)
-    size_t lastKeyCounters[16] = {0};
-
-    int numberOfRounds = 4, randomMessageCount = 1000;
-    keys = generateRoundKeys(numberOfRounds + 1); 
-    
-    for (int i = 0; i < numberOfRounds + 1; i++)
+    /*
+        Implement linear attackdescribed in [3, p. 140–142].You need to extract four bits of the last round key.
+        
+        Identical to experiment in Fig. 7.7 []
+    */
+    size_t guessedCorrectly = 0;
+    unsigned short int *keys, m, y, lastKey, a, mask;
+    int numberOfRounds = 5, randomMessageCount = 1000, experimentCount = 100;
+    for (size_t experimentCounter = 0; experimentCounter < experimentCount; experimentCounter++)
     {
-        printf("key k_%d: ", i);
-        printBytes(keys[i]);
-        printf("\n");
-    }
-    
+        // initialize counters for the last key
+        // 16 counters for a_3, where k_last = (a_3, a_2, a_1, a_0)
+        size_t lastKeyCounters[16] = {0};
 
-    for (size_t i = 0; i < randomMessageCount; i++)
-    {
-        // random message
-        m = (unsigned short int) rand();
+        keys = generateRoundKeys(numberOfRounds + 1); 
 
-        // encrypt
-        y = encryptCipherD(m, numberOfRounds, keys, true);
-
-        unsigned short int mask = (unsigned short int ) 32768;
-        for (size_t lastKeyNibble = 0; lastKeyNibble < 16; lastKeyNibble++)
+        for (size_t i = 0; i < randomMessageCount; i++)
         {
-            if (xor_bits(mask & m) == xor_bits(mask & (y ^ (lastKeyNibble << 12))))
-                lastKeyCounters[lastKeyNibble]++;
+            // random message
+            m = (unsigned short int) rand();
+
+            // encrypt
+            y = encryptCipherD(m, numberOfRounds, keys, true);
+
+            mask = (unsigned short int ) 32768;
+            for (size_t lastKeyNibble = 0; lastKeyNibble < 16; lastKeyNibble++)
+            {
+                // work the round backwards
+                a = shortIntInvSBox(y ^ (lastKeyNibble << 12));
+                if(xor_bits(mask & m) == xor_bits(mask & a))
+                    lastKeyCounters[lastKeyNibble]++;
+            }
         }
+        
+        if (arrayMaxValIndex(lastKeyCounters, 16) == (keys[numberOfRounds] >> 12))
+            guessedCorrectly++;
     }
 
-    //print counters
-    printf("last key first nibble counters:\n");
-    for (size_t i = 0; i < 16; i++)
-    {
-        printBytes(i << 12);
-        printf(": %zu\n", lastKeyCounters[i]);
-    }
-    
+    printf("First nibble of the last key had the highest bias %ld times out of %d experiments.\n", guessedCorrectly, experimentCount);
 }
 
 void main() {
     srand(time(NULL));   // Initialization, should only be called once.
 
-    // firstExercise();
+    firstExercise();
 
     secondExercise();
-
-    // unsigned short int *keys = generateRoundKeys(1);
-    // printf("key[0]: ");
-    // printBytes(keys[0]);
-    // printf("\n");
-    // size_t k_nibbles[16] = {0};
-    // unsigned short int bitMask = 32768, message;
-    // size_t messageCount = 1000;
-    // for (size_t messageCounter = 0; messageCounter < messageCount; messageCounter++)
-    // {
-    //     message = (unsigned short int) rand();
-    //     for (unsigned short int k_nibble = 0; k_nibble < 16; k_nibble++)
-    //     {
-    //         if (xor_bits(bitMask & message) ^ xor_bits(bitMask & (k_nibble << 12)) == xor_bits(bitMask & encryptCipherD(message, 2, keys, false)))
-    //             k_nibbles[k_nibble]++;
-    //     }
-    // }
-    
-    // for (size_t i = 0; i < 16; i++)
-    // {
-    //     printBytes(i << 12);
-    //     printf(": %zu\n", k_nibbles[i]);
-    // }
-    
-    
 }
