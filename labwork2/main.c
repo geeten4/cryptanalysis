@@ -193,9 +193,9 @@ void secondExercise() {
     unsigned short int *keys, m, y, lastKey;
     // initialize counters for the last key
     // 16 counters for a_3, where k_last = (a_3, a_2, a_1, a_0)
-    unsigned short int lastKeyCounters[16] = {0};
+    size_t lastKeyCounters[16] = {0};
 
-    int numberOfRounds = 4, randomMessageCount = 100000;
+    int numberOfRounds = 4, randomMessageCount = 1000;
     keys = generateRoundKeys(numberOfRounds + 1); 
     
     for (int i = 0; i < numberOfRounds + 1; i++)
@@ -214,13 +214,10 @@ void secondExercise() {
         // encrypt
         y = encryptCipherD(m, numberOfRounds, keys, true);
 
-        unsigned short int u;
-        // work backwards for all possible last key nibbles
         unsigned short int mask = (unsigned short int ) 32768;
         for (size_t lastKeyNibble = 0; lastKeyNibble < 16; lastKeyNibble++)
         {
-            u = y ^ (lastKeyNibble << 12);
-            if (xor_bits(mask & m) == xor_bits(mask & u))
+            if (xor_bits(mask & m) == xor_bits(mask & (y ^ (lastKeyNibble << 12))))
                 lastKeyCounters[lastKeyNibble]++;
         }
     }
@@ -230,7 +227,7 @@ void secondExercise() {
     for (size_t i = 0; i < 16; i++)
     {
         printBytes(i << 12);
-        printf(": %d\n", lastKeyCounters[i]);
+        printf(": %zu\n", lastKeyCounters[i]);
     }
     
 }
@@ -241,4 +238,29 @@ void main() {
     // firstExercise();
 
     secondExercise();
+
+    // unsigned short int *keys = generateRoundKeys(1);
+    // printf("key[0]: ");
+    // printBytes(keys[0]);
+    // printf("\n");
+    // size_t k_nibbles[16] = {0};
+    // unsigned short int bitMask = 32768, message;
+    // size_t messageCount = 1000;
+    // for (size_t messageCounter = 0; messageCounter < messageCount; messageCounter++)
+    // {
+    //     message = (unsigned short int) rand();
+    //     for (unsigned short int k_nibble = 0; k_nibble < 16; k_nibble++)
+    //     {
+    //         if (xor_bits(bitMask & message) ^ xor_bits(bitMask & (k_nibble << 12)) == xor_bits(bitMask & encryptCipherD(message, 2, keys, false)))
+    //             k_nibbles[k_nibble]++;
+    //     }
+    // }
+    
+    // for (size_t i = 0; i < 16; i++)
+    // {
+    //     printBytes(i << 12);
+    //     printf(": %zu\n", k_nibbles[i]);
+    // }
+    
+    
 }
