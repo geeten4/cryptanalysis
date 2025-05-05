@@ -180,6 +180,8 @@ int addMessage(MessageCiphertextNode *baseNode, gf2_12 message, gf2_12 ciphertex
     MessageCiphertextNode *newNode = malloc(sizeof(MessageCiphertextNode));
     newNode->message = message;
     newNode->ciphertext = ciphertext;
+    newNode->left = 0;
+    newNode->right = 0;
 
     while (true) {
         if ((node->message < message) & (node->right == 0)) {
@@ -206,7 +208,7 @@ int addMessage(MessageCiphertextNode *baseNode, gf2_12 message, gf2_12 ciphertex
     return 0;
 }
 
-MessageCiphertextNode* findNode(MessageCiphertextNode *baseNode, gf2_12 message) {
+MessageCiphertextNode* findMessageCiphertextNode(MessageCiphertextNode *baseNode, gf2_12 message) {
     MessageCiphertextNode *node = baseNode;
 
     while (true) {
@@ -228,6 +230,93 @@ MessageCiphertextNode* findNode(MessageCiphertextNode *baseNode, gf2_12 message)
     }
 }
 
+void printMessageCiphertextNode(MessageCiphertextNode *node) {
+    if(node->left != 0) {
+        printMessageCiphertextNode(node->left);
+    }
+    printf("message: %d, ciphertext: %d, left: %ld, right: %ld\n", node->message, node->ciphertext, (uintptr_t) node->left, (uintptr_t) node->right);
+    if (node->right != 0) {
+        printMessageCiphertextNode(node->right);
+    }
+}
+
+typedef struct BIndexNode
+{
+    gf2_12 b;
+    size_t index;
+    struct BIndexNode* left;
+    struct BIndexNode* right;
+} BIndexNode;
+
+int addBIndex(BIndexNode *baseNode, gf2_12 b, size_t index) {
+    BIndexNode *node = baseNode;
+    BIndexNode *newNode = malloc(sizeof(BIndexNode));
+    newNode->b = b;
+    newNode->index = index;
+    newNode->right = 0;
+    newNode->left = 0;
+
+    while (true) {
+        if ((node->b < b) & (node->right == 0)) {
+            node->right = newNode;
+            break;
+        }
+        else if ((node->b < b) & (node->right != 0)) {
+            node = node->right;
+            break;
+        }
+        else if ((node->b > b) & (node->left == 0)) {
+            node->left = newNode;
+            break;
+        }
+        else if ((node->b > b) & (node->left != 0)) {
+            node = node->left;
+            break;
+        }
+        else {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+BIndexNode* findBIndexNode(BIndexNode *baseNode, gf2_12 b) {
+    BIndexNode *node = baseNode;
+
+    while (true) {
+        if (node->b == b) {
+            return node;
+        } else if ((node->b < b) & (node->right == 0)) {
+            return 0;
+        } else if ((node->b < b) & (node->right != 0)) {
+            node = node->right;
+            continue;
+        } else if ((node->b > b) & (node->left == 0)) {
+            return 0;
+        } else if ((node->b > b) & (node->left != 0)) {
+            node = node->left;
+            continue;
+        } else {
+            return 0;
+        }
+    }
+}
+
+void freeBIndex(BIndexNode *node) {
+    if (node->left != 0) {
+        freeBIndex(node->left);
+        printf("free node->left: %ld\n", (uintptr_t) node->left);
+        free(node->left);
+    }
+    
+    if (node->right != 0) {
+        freeBIndex(node->right);
+        printf("free node->right: %ld\n", (uintptr_t) node->right);
+        free(node->right);
+    }
+}
+
 int main() {
     
     srand(time(NULL));   // Initialization, should only be called once.
@@ -243,31 +332,81 @@ int main() {
     gf2_12 key2 = (gf2_12) rand();
 
     // generate 2^t message-ciphertext pairs, store it as a binary tree
-    size_t t = 20;
+    size_t t = 4;
     gf2_12 message = (gf2_12) rand();
     MessageCiphertextNode base_m_c = {message, EDE_2(message, key1, key2)};
 
     for (size_t i = 0; i < 1 << t; i++)
     {
         message = (gf2_12) rand();
+        printf("adding: %d, %d\n", message, EDE_2(message, key1, key2));
         addMessage(&base_m_c, message, EDE_2(message, key1, key2));
     }
-    
-    // guess A = a, run through all values of k_1=i, compute m_i = decrypt(a, i),
-    // if m_i is in base_m_c tree, then we find c_i, find b_i = decrypt(c_i, i)
-    // and store the values (b_i, i) in the tree base_b_i
-    gf2_12 a = (gf2_12) rand(), m_i;
-    MessageCiphertextNode *node;
-    for (size_t i = 0; i < 1 << 12; i++)
+
+    printMessageCiphertextNode(&base_m_c);
+    return 0;
+
+    size_t randomACount = 1 << 10;
+
+    gf2_12 a, m_i, c_i, b_i;
+    MessageCiphertextNode *msnode;
+    BIndexNode base_b_i = {
+        .b = 0,
+        .index = -1,
+        .left = 0,
+        .right = 0
+    };
+    for (size_t randomACoutner = 0; randomACoutner < randomACount; randomACoutner++)
     {
-        m_i = decrypt(a, (gf2_12) i);
-        node = findNode(&base_m_c, m_i);
-        if (node == 0)
-            continue;
-        else {
-            printf("%d, %d\n", m_i, node->ciphertext);
-        }
-    }
+        // guess A = a, run through all values of k_1=i, compute m_i = decrypt(a, i),
+        // if m_i is in base_m_c tree, then we find c_i, find b_i = decrypt(c_i, i)
+        // and store the values (b_i, i) in the tree base_b_i
+        a = (gf2_12) rand();
     
+        for (size_t i = 0; i < 1 << 12; i++)
+        {
+            // k_1 = i is the guess for key1
+            
+            // find m_i in the tree base_m_c
+            m_i = decrypt(a, (gf2_12) i);
+            msnode = findMessageCiphertextNode(&base_m_c, m_i);
+            if (msnode == 0)
+                continue;
+    
+            printf("possible m_i: %d, c_i: %d\n", msnode->message, msnode->ciphertext);
+            // given m_i and its ciphertext, decrypt c_i to get b_i
+            c_i = msnode->ciphertext;
+            b_i = decrypt(c_i, (gf2_12) i);
+            
+            printf("possible b_i: %d, i: %ld\n", b_i, i);
+            // initialize base_b_i tree, use index=-1 to denote unitialized tree
+            if (base_b_i.index == -1) {
+                base_b_i.b = b_i;
+                base_b_i.index = i;
+                base_b_i.left = 0;
+                base_b_i.right = 0;
+                continue;
+            }
+            
+            // addBIndex(&base_b_i, b_i, i);
+        }
+        
+        // iterate over all values of k_2 to find b_j = decrypt(a, j)
+        // gf2_12 b_j;
+        // BIndexNode *binode;
+
+        // for (size_t j = 0; j < 1 << 12; j++)
+        // {
+        //     // k_2 = j is the guess for key2
+        //     b_j = decrypt(a, j);
+        //     binode = findBIndexNode(&base_b_i, b_j);
+        //     if (binode == 0)
+        //         continue;
+            
+        // }
+
+        // freeBIndex(&base_b_i);
+        // base_b_i.index = -1;
+    }
 }
 
