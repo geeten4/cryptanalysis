@@ -44,7 +44,7 @@ gf2_12 gf_pow(gf2_12 base, uint16_t exponent) {
     return result;
 }
 
-gf2_12 permutationPolynomial(gf2_12 x) {
+gf2_12 permutation_F(gf2_12 x) {
     // represent F_2^12 as F_2[x] / f, where f = x^12 + x^7 + x^6 + x^5 + x^3 + x + 1
     // we can write these polynomials as integers < 2^12 modulo 0b0001000001111011 = 0x107b =  4219
 
@@ -104,9 +104,9 @@ Node* addNode(Node *baseNode, size_t i, gf2_12 value) {
 }
 
 bool isPermutation(gf2_12 (*func)(gf2_12)) {
-    Node baseNode = {0, 0, 0};
+    Node baseNode = {0, 0, 0, 0};
 
-    // check permutationPolynomial is in fact a permutation
+    // check permutation_F is in fact a permutation
     for (size_t i = 1; i < 4096; i++)
     {
         gf2_12 f_i = func((gf2_12) i);
@@ -156,7 +156,7 @@ bool isLinear(gf2_12 (*func)(gf2_12)) {
 }
 
 gf2_12 encrypt(gf2_12 x, gf2_12 key) {
-    return gf_add(permutationPolynomial(gf_add(x, key)), key);
+    return gf_add(permutation_F(gf_add(x, key)), key);
 }
 
 gf2_12 decrypt(gf2_12 x, gf2_12 key) {
@@ -167,19 +167,107 @@ gf2_12 EDE_2(gf2_12 m, gf2_12 k_1, gf2_12 k_2) {
     return encrypt(decrypt(encrypt(m, k_1), k_2), k_1);
 }
 
+typedef struct MessageCiphertextNode
+{
+    gf2_12 message;
+    gf2_12 ciphertext;
+    struct MessageCiphertextNode* left;
+    struct MessageCiphertextNode* right;
+} MessageCiphertextNode;
+
+int addMessage(MessageCiphertextNode *baseNode, gf2_12 message, gf2_12 ciphertext) {
+    MessageCiphertextNode *node = baseNode;
+    MessageCiphertextNode *newNode = malloc(sizeof(MessageCiphertextNode));
+    newNode->message = message;
+    newNode->ciphertext = ciphertext;
+
+    while (true) {
+        if ((node->message < message) & (node->right == 0)) {
+            node->right = newNode;
+            break;
+        }
+        else if ((node->message < message) & (node->right != 0)) {
+            node = node->right;
+            break;
+        }
+        else if ((node->message > message) & (node->left == 0)) {
+            node->left = newNode;
+            break;
+        }
+        else if ((node->message > message) & (node->left != 0)) {
+            node = node->left;
+            break;
+        }
+        else {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+MessageCiphertextNode* findNode(MessageCiphertextNode *baseNode, gf2_12 message) {
+    MessageCiphertextNode *node = baseNode;
+
+    while (true) {
+        if (node->message == message) {
+            return node;
+        } else if ((node->message < message) & (node->right == 0)) {
+            return 0;
+        } else if ((node->message < message) & (node->right != 0)) {
+            node = node->right;
+            continue;
+        } else if ((node->message > message) & (node->left == 0)) {
+            return 0;
+        } else if ((node->message > message) & (node->left != 0)) {
+            node = node->left;
+            continue;
+        } else {
+            return 0;
+        }
+    }
+}
+
 int main() {
     
     srand(time(NULL));   // Initialization, should only be called once.
 
-    assert(isPermutation(permutationPolynomial));
+    // assert the permutation F is in fact a permutation
+    assert(isPermutation(permutation_F));
 
-    assert(!(isLinear(permutationPolynomial)));
+    // assert the permutation F is non-linear
+    assert(!(isLinear(permutation_F)));
 
-    gf2_12 key = 2489;
+    // generate random keys
+    gf2_12 key1 = (gf2_12) rand();
+    gf2_12 key2 = (gf2_12) rand();
 
-    printf("%d\n", encrypt(489, key));
-    printf("%d\n", decrypt(encrypt(489, key), key));
+    // generate 2^t message-ciphertext pairs, store it as a binary tree
+    size_t t = 20;
+    gf2_12 message = (gf2_12) rand();
+    MessageCiphertextNode base_m_c = {message, EDE_2(message, key1, key2)};
 
+    for (size_t i = 0; i < 1 << t; i++)
+    {
+        message = (gf2_12) rand();
+        addMessage(&base_m_c, message, EDE_2(message, key1, key2));
+    }
+    
+    // guess A = a, run through all values of k_1=i, compute m_i = decrypt(a, i),
+    // if m_i is in base_m_c tree, then we find c_i, find b_i = decrypt(c_i, i)
+    // and store the values (b_i, i) in the tree base_b_i
+    gf2_12 a = (gf2_12) rand(), m_i;
+    MessageCiphertextNode *node;
+    for (size_t i = 0; i < 1 << 12; i++)
+    {
+        m_i = decrypt(a, (gf2_12) i);
+        node = findNode(&base_m_c, m_i);
+        if (node == 0)
+            continue;
+        else {
+            printf("%d, %d\n", m_i, node->ciphertext);
+        }
+    }
     
 }
 
