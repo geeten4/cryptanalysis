@@ -70,37 +70,29 @@ typedef struct Node
     struct Node *right;
 } Node;
 
-Node* addNode(Node *baseNode, size_t i, gf2_12 value) {
-    Node *node = baseNode;
-    Node *newNode = malloc(sizeof(Node));
-    newNode->i = i;
-    newNode->value = value;
-    newNode->right = 0;
-    newNode->left = 0;
+Node *addNodeRecursive(Node *baseNode, Node *newNode) {
 
-    while (true) {
-        if ((node->value < value) & (node->right == 0)) {
-            node->right = newNode;
-            break;
-        }
-        else if ((node->value < value) & (node->right != 0)) {
-            node = node->right;
-            break;
-        }
-        else if ((node->value > value) & (node->left == 0)) {
-            node->left = newNode;
-            break;
-        }
-        else if ((node->value > value) & (node->left != 0)) {
-            node = node->left;
-            break;
-        }
-        else {
-            return node;
-        }
-    }
-
+    if ((baseNode->value < newNode->value) & (baseNode->right != 0))
+        addNodeRecursive(baseNode->right, newNode);
+    else if ((baseNode->value < newNode->value) & (baseNode->right == 0))
+        baseNode->right = newNode;
+    else if ((baseNode->value > newNode->value) & (baseNode->left != 0))
+        addNodeRecursive(baseNode->left, newNode);
+    else if ((baseNode->value > newNode->value) & (baseNode->left == 0))
+        baseNode->left = newNode;
+    else
+        return baseNode;
     return 0;
+}
+
+Node *addNode(Node *baseNode, size_t i, gf2_12 value) {
+    Node *newNode = malloc(sizeof(Node));
+    newNode->value = value;
+    newNode->i = i;
+    newNode->left = 0;
+    newNode->right = 0;
+
+    return addNodeRecursive(baseNode, newNode);
 }
 
 bool isPermutation(gf2_12 (*func)(gf2_12)) {
@@ -175,37 +167,29 @@ typedef struct MessageCiphertextNode
     struct MessageCiphertextNode* right;
 } MessageCiphertextNode;
 
+int addMessageRecursive(MessageCiphertextNode *baseNode, MessageCiphertextNode *newNode) {
+
+    if ((baseNode->message < newNode->message) & (baseNode->right != 0))
+        addMessageRecursive(baseNode->right, newNode);
+    else if ((baseNode->message < newNode->message) & (baseNode->right == 0))
+        baseNode->right = newNode;
+    else if ((baseNode->message > newNode->message) & (baseNode->left != 0))
+        addMessageRecursive(baseNode->left, newNode);
+    else if ((baseNode->message > newNode->message) & (baseNode->left == 0))
+        baseNode->left = newNode;
+    else
+        return 1;
+    return 0;
+}
+
 int addMessage(MessageCiphertextNode *baseNode, gf2_12 message, gf2_12 ciphertext) {
-    MessageCiphertextNode *node = baseNode;
     MessageCiphertextNode *newNode = malloc(sizeof(MessageCiphertextNode));
     newNode->message = message;
     newNode->ciphertext = ciphertext;
     newNode->left = 0;
     newNode->right = 0;
 
-    while (true) {
-        if ((node->message < message) & (node->right == 0)) {
-            node->right = newNode;
-            break;
-        }
-        else if ((node->message < message) & (node->right != 0)) {
-            node = node->right;
-            break;
-        }
-        else if ((node->message > message) & (node->left == 0)) {
-            node->left = newNode;
-            break;
-        }
-        else if ((node->message > message) & (node->left != 0)) {
-            node = node->left;
-            break;
-        }
-        else {
-            return 1;
-        }
-    }
-
-    return 0;
+    return addMessageRecursive(baseNode, newNode);
 }
 
 MessageCiphertextNode* findMessageCiphertextNode(MessageCiphertextNode *baseNode, gf2_12 message) {
@@ -248,37 +232,30 @@ typedef struct BIndexNode
     struct BIndexNode* right;
 } BIndexNode;
 
+
+int addBIndexRecursive(BIndexNode *baseNode, BIndexNode *newNode) {
+
+    if ((baseNode->b < newNode->b) & (baseNode->right != 0))
+        addBIndexRecursive(baseNode->right, newNode);
+    else if ((baseNode->b < newNode->b) & (baseNode->right == 0))
+        baseNode->right = newNode;
+    else if ((baseNode->b > newNode->b) & (baseNode->left != 0))
+        addBIndexRecursive(baseNode->left, newNode);
+    else if ((baseNode->b > newNode->b) & (baseNode->left == 0))
+        baseNode->left = newNode;
+    else
+        return 1;
+    return 0;
+}
+
 int addBIndex(BIndexNode *baseNode, gf2_12 b, size_t index) {
-    BIndexNode *node = baseNode;
     BIndexNode *newNode = malloc(sizeof(BIndexNode));
     newNode->b = b;
     newNode->index = index;
-    newNode->right = 0;
     newNode->left = 0;
+    newNode->right = 0;
 
-    while (true) {
-        if ((node->b < b) & (node->right == 0)) {
-            node->right = newNode;
-            break;
-        }
-        else if ((node->b < b) & (node->right != 0)) {
-            node = node->right;
-            break;
-        }
-        else if ((node->b > b) & (node->left == 0)) {
-            node->left = newNode;
-            break;
-        }
-        else if ((node->b > b) & (node->left != 0)) {
-            node = node->left;
-            break;
-        }
-        else {
-            return 1;
-        }
-    }
-
-    return 0;
+    return addBIndexRecursive(baseNode, newNode);
 }
 
 BIndexNode* findBIndexNode(BIndexNode *baseNode, gf2_12 b) {
@@ -300,6 +277,16 @@ BIndexNode* findBIndexNode(BIndexNode *baseNode, gf2_12 b) {
         } else {
             return 0;
         }
+    }
+}
+
+void printBIndexNode(BIndexNode *node) {
+    if(node->left != 0) {
+        printBIndexNode(node->left);
+    }
+    printf("b: %d, index: %ld, left: %ld, right: %ld\n", node->b, node->index, (uintptr_t) node->left, (uintptr_t) node->right);
+    if (node->right != 0) {
+        printBIndexNode(node->right);
     }
 }
 
@@ -339,14 +326,10 @@ int main() {
     for (size_t i = 0; i < 1 << t; i++)
     {
         message = (gf2_12) rand();
-        printf("adding: %d, %d\n", message, EDE_2(message, key1, key2));
         addMessage(&base_m_c, message, EDE_2(message, key1, key2));
     }
 
-    printMessageCiphertextNode(&base_m_c);
-    return 0;
-
-    size_t randomACount = 1 << 10;
+    size_t randomACount = 1 << 1;
 
     gf2_12 a, m_i, c_i, b_i;
     MessageCiphertextNode *msnode;
@@ -387,26 +370,29 @@ int main() {
                 base_b_i.right = 0;
                 continue;
             }
-            
-            // addBIndex(&base_b_i, b_i, i);
+
+            addBIndex(&base_b_i, b_i, i);
         }
         
+        printBIndexNode(&base_b_i);
+        return 0;
+
         // iterate over all values of k_2 to find b_j = decrypt(a, j)
-        // gf2_12 b_j;
-        // BIndexNode *binode;
+        gf2_12 b_j;
+        BIndexNode *binode;
 
-        // for (size_t j = 0; j < 1 << 12; j++)
-        // {
-        //     // k_2 = j is the guess for key2
-        //     b_j = decrypt(a, j);
-        //     binode = findBIndexNode(&base_b_i, b_j);
-        //     if (binode == 0)
-        //         continue;
+        for (size_t j = 0; j < 1 << 12; j++)
+        {
+            // k_2 = j is the guess for key2
+            b_j = decrypt(a, j);
+            binode = findBIndexNode(&base_b_i, b_j);
+            if (binode == 0)
+                continue;
             
-        // }
+        }
 
-        // freeBIndex(&base_b_i);
-        // base_b_i.index = -1;
+        freeBIndex(&base_b_i);
+        base_b_i.index = -1;
     }
 }
 
