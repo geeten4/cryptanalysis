@@ -148,10 +148,12 @@ bool isLinear(gf2_12 (*func)(gf2_12)) {
 }
 
 gf2_12 encrypt(gf2_12 x, gf2_12 key) {
+    // F(x + key) + key
     return gf_add(permutation_F(gf_add(x, key)), key);
 }
 
 gf2_12 decrypt(gf2_12 x, gf2_12 key) {
+    // F^-1(x + key) + key
     return gf_add(invPermutationPolynomial(gf_add(x, key)), key);
 }
 
@@ -224,6 +226,17 @@ void printMessageCiphertextNode(MessageCiphertextNode *node) {
     }
 }
 
+int testMessageCiphertextAgainstKeys(MessageCiphertextNode *baseNode, gf2_12 key1, gf2_12 key2) {
+    // returns 0 if key1 and key2 work for all message-ciphertext pairs in baseNode
+    // returns 1 otherwise
+    if (EDE_2(baseNode->message, key1, key2) != baseNode->ciphertext)
+        return 1;
+    
+    int left = (baseNode->left == 0) ? 0 : testMessageCiphertextAgainstKeys(baseNode->left, key1, key2);
+    int right = (baseNode->right == 0) ? 0 : testMessageCiphertextAgainstKeys(baseNode->right, key1, key2);
+    return left || right;
+}
+
 typedef struct BIndexNode
 {
     gf2_12 b;
@@ -235,9 +248,9 @@ typedef struct BIndexNode
 
 int addBIndexRecursive(BIndexNode *baseNode, BIndexNode *newNode) {
 
-    if ((baseNode->b < newNode->b) & (baseNode->right != 0))
+    if ((baseNode->b <= newNode->b) & (baseNode->right != 0))
         addBIndexRecursive(baseNode->right, newNode);
-    else if ((baseNode->b < newNode->b) & (baseNode->right == 0))
+    else if ((baseNode->b <= newNode->b) & (baseNode->right == 0))
         baseNode->right = newNode;
     else if ((baseNode->b > newNode->b) & (baseNode->left != 0))
         addBIndexRecursive(baseNode->left, newNode);
@@ -293,15 +306,19 @@ void printBIndexNode(BIndexNode *node) {
 void freeBIndex(BIndexNode *node) {
     if (node->left != 0) {
         freeBIndex(node->left);
-        printf("free node->left: %ld\n", (uintptr_t) node->left);
+        // printf("free node->left: %ld\n", (uintptr_t) node->left);
         free(node->left);
     }
     
     if (node->right != 0) {
         freeBIndex(node->right);
-        printf("free node->right: %ld\n", (uintptr_t) node->right);
+        // printf("free node->right: %ld\n", (uintptr_t) node->right);
         free(node->right);
     }
+}
+
+gf2_12 rand_gf2_12() {
+    return (gf2_12) (rand() % (1 << 12));
 }
 
 int main() {
@@ -314,18 +331,25 @@ int main() {
     // assert the permutation F is non-linear
     assert(!(isLinear(permutation_F)));
 
+    // are inverses
+    for (gf2_12 x = 0; x < 4096; x++)
+    {
+        assert(invPermutationPolynomial(permutation_F(x)) == x);
+    }
+
     // generate random keys
-    gf2_12 key1 = (gf2_12) rand();
-    gf2_12 key2 = (gf2_12) rand();
+    gf2_12 key1 = rand_gf2_12(), key2 = rand_gf2_12();
+
+    printf("key1: %d, key2: %d\n", key1, key2);
 
     // generate 2^t message-ciphertext pairs, store it as a binary tree
-    size_t t = 4;
-    gf2_12 message = (gf2_12) rand();
+    size_t t = 12;
+    gf2_12 message = rand_gf2_12();
     MessageCiphertextNode base_m_c = {message, EDE_2(message, key1, key2)};
 
     for (size_t i = 0; i < 1 << t; i++)
     {
-        message = (gf2_12) rand();
+        message = rand_gf2_12();
         addMessage(&base_m_c, message, EDE_2(message, key1, key2));
     }
 
@@ -339,12 +363,12 @@ int main() {
         .left = 0,
         .right = 0
     };
-    for (size_t randomACoutner = 0; randomACoutner < randomACount; randomACoutner++)
+    for (size_t randomACounter = 0; randomACounter < randomACount; randomACounter++)
     {
         // guess A = a, run through all values of k_1=i, compute m_i = decrypt(a, i),
         // if m_i is in base_m_c tree, then we find c_i, find b_i = decrypt(c_i, i)
         // and store the values (b_i, i) in the tree base_b_i
-        a = (gf2_12) rand();
+        a = rand_gf2_12();
     
         for (size_t i = 0; i < 1 << 12; i++)
         {
@@ -355,13 +379,13 @@ int main() {
             msnode = findMessageCiphertextNode(&base_m_c, m_i);
             if (msnode == 0)
                 continue;
-    
-            printf("possible m_i: %d, c_i: %d\n", msnode->message, msnode->ciphertext);
+
+            // printf("possible m_i: %d, c_i: %d\n", msnode->message, msnode->ciphertext);
             // given m_i and its ciphertext, decrypt c_i to get b_i
             c_i = msnode->ciphertext;
             b_i = decrypt(c_i, (gf2_12) i);
             
-            printf("possible b_i: %d, i: %ld\n", b_i, i);
+            // printf("possible b_i: %d, i: %ld\n", b_i, i);
             // initialize base_b_i tree, use index=-1 to denote unitialized tree
             if (base_b_i.index == -1) {
                 base_b_i.b = b_i;
@@ -374,14 +398,13 @@ int main() {
             addBIndex(&base_b_i, b_i, i);
         }
         
-        printBIndexNode(&base_b_i);
-        return 0;
+        // printBIndexNode(&base_b_i);
 
         // iterate over all values of k_2 to find b_j = decrypt(a, j)
         gf2_12 b_j;
         BIndexNode *binode;
 
-        for (size_t j = 0; j < 1 << 12; j++)
+        for (gf2_12 j = 0; j < 1 << 12; j++)
         {
             // k_2 = j is the guess for key2
             b_j = decrypt(a, j);
@@ -389,6 +412,13 @@ int main() {
             if (binode == 0)
                 continue;
             
+            // we found a b_j s.t. b_j = decrypt(a, j)
+            // test if EDE_2(m, i, j) = c holds for all 
+            // message-cipthertext pairs in base_m_c
+            gf2_12 i = (gf2_12) binode->index;
+            if (testMessageCiphertextAgainstKeys(&base_m_c, i, j) == 0) {
+                printf("possible key pair: key1: %d, key2: %d\n", i, j);
+            }
         }
 
         freeBIndex(&base_b_i);
