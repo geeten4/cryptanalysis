@@ -139,7 +139,7 @@ bool isLinear(gf2_12 (*func)(gf2_12)) {
             f_j = func((gf2_12) j);
             f_ipj = func((gf2_12) i+j);
 
-            if(f_i ^ f_j != f_ipj) {
+            if((f_i ^ f_j) != f_ipj) {
                 return false;
             }
         }
@@ -229,11 +229,20 @@ void printMessageCiphertextNode(MessageCiphertextNode *node) {
 int testMessageCiphertextAgainstKeys(MessageCiphertextNode *baseNode, gf2_12 key1, gf2_12 key2) {
     // returns 0 if key1 and key2 work for all message-ciphertext pairs in baseNode
     // returns 1 otherwise
+    // printf("\ntestMessageCiphertextAgainstKeys\n");
+    // printf("baseNode->message: %d\n", baseNode->message);
+    // printf("baseNode->ciphertext: %d\n", baseNode->ciphertext);
+    // printf("EDE_2(%d, %d, %d) == %d: %d\n", baseNode->message, key1, key2, baseNode->ciphertext, EDE_2(baseNode->message, key1, key2) == baseNode->ciphertext);
     if (EDE_2(baseNode->message, key1, key2) != baseNode->ciphertext)
         return 1;
+
+    int left = 0, right = 0;
+    if (baseNode->left != 0)
+        left = testMessageCiphertextAgainstKeys(baseNode->left, key1, key2);
     
-    int left = (baseNode->left == 0) ? 0 : testMessageCiphertextAgainstKeys(baseNode->left, key1, key2);
-    int right = (baseNode->right == 0) ? 0 : testMessageCiphertextAgainstKeys(baseNode->right, key1, key2);
+    if (baseNode->right != 0)
+        right = testMessageCiphertextAgainstKeys(baseNode->right, key1, key2);
+    
     return left || right;
 }
 
@@ -304,6 +313,7 @@ void printBIndexNode(BIndexNode *node) {
 }
 
 void freeBIndex(BIndexNode *node) {
+    // printf("\nfreeBIndex\n");
     if (node->left != 0) {
         freeBIndex(node->left);
         // printf("free node->left: %ld\n", (uintptr_t) node->left);
@@ -319,6 +329,77 @@ void freeBIndex(BIndexNode *node) {
 
 gf2_12 rand_gf2_12() {
     return (gf2_12) (rand() % (1 << 12));
+}
+
+MessageCiphertextNode* randomMessageCiphertextTree(gf2_12 key1, gf2_12 key2, size_t t) {
+    // generate 2^t message-ciphertext pairs, store it as a binary tree
+    gf2_12 message = rand_gf2_12();
+    MessageCiphertextNode *base_m_c = malloc(sizeof(MessageCiphertextNode));
+    base_m_c->message = message;
+    base_m_c->ciphertext = EDE_2(message, key1, key2);
+
+    for (size_t i = 0; i < 1 << t; i++)
+    {
+        message = rand_gf2_12();
+        addMessage(base_m_c, message, EDE_2(message, key1, key2));
+    }
+
+    return base_m_c;
+}
+
+void randomMessageCiphertextToFile(FILE *file, gf2_12 key1, gf2_12 key2, int t) {
+    gf2_12 message;
+
+    // write header line with keys
+    fprintf(file, "key1: %d, key2: %d\n", key1, key2);
+
+    // write messages to csv file
+    for (size_t i = 0; i < 1 << t; i++)
+    {
+        message = rand_gf2_12();
+        fprintf(file, "%d,%d\n", message, EDE_2(message, key1, key2));
+    }
+
+}
+
+typedef struct MessageCipherTextBaseWithKeys {
+    MessageCiphertextNode *baseNode;
+    gf2_12 key1;
+    gf2_12 key2;
+} MessageCipherTextBaseWithKeys;
+
+MessageCipherTextBaseWithKeys *readMessageCiphertextTreeFromFile(FILE *file) {
+    // read from csv file
+    char* line = NULL;
+    size_t len = 0;
+    
+    // read the keys from the header line
+    getline(&line, &len, file);
+    int k1, k2;
+    sscanf(line, "key1: %d, key2: %d", &k1, &k2);
+    assert((k1 < (1 << 12)) && (k2 < (1 << 12)));
+    gf2_12 key1 = (gf2_12)k1, key2 = (gf2_12)k2;
+
+    // initial value for tree
+    int m, c;
+    getline(&line, &len, file);
+    sscanf(line, "%d,%d", &m, &c);
+    MessageCiphertextNode *base_m_c = malloc(sizeof(MessageCiphertextNode));
+    base_m_c->message = (gf2_12)m;
+    base_m_c->ciphertext = (gf2_12)c;
+
+    // read message-ciphertext pairs
+    while (getline(&line, &len, file) != -1) {
+        sscanf(line, "%d,%d", &m, &c);
+        // printf("message: %d, ciphertext: %d\n", m, c);
+        addMessage(base_m_c, (gf2_12)m, (gf2_12)c);
+    }
+
+    MessageCipherTextBaseWithKeys *base_with_keys = malloc(sizeof(MessageCipherTextBaseWithKeys));
+    base_with_keys->baseNode = base_m_c;
+    base_with_keys->key1 = key1;
+    base_with_keys->key2 = key2;
+    return base_with_keys;
 }
 
 int main() {
@@ -337,23 +418,25 @@ int main() {
         assert(invPermutationPolynomial(permutation_F(x)) == x);
     }
 
-    // generate random keys
+    // generate random keys and message-ciphertext pairs
     gf2_12 key1 = rand_gf2_12(), key2 = rand_gf2_12();
+    MessageCiphertextNode *base_m_c = randomMessageCiphertextTree(key1, key2, 20);
 
+    // read random keys and message-ciphertext pairs from a csv file
+    // FILE *file = fopen("message_ciphertext.csv", "r");
+    // MessageCipherTextBaseWithKeys *base_with_keys = readMessageCiphertextTreeFromFile(file);
+    // MessageCiphertextNode *base_m_c = base_with_keys->baseNode;
+    // gf2_12 key1 = base_with_keys->key1;
+    // gf2_12 key2 = base_with_keys->key2;
+
+    // print keys
     printf("key1: %d, key2: %d\n", key1, key2);
+    // print tree
+    // printMessageCiphertextNode(base_m_c);
+    // return 0;
 
-    // generate 2^t message-ciphertext pairs, store it as a binary tree
-    size_t t = 12;
-    gf2_12 message = rand_gf2_12();
-    MessageCiphertextNode base_m_c = {message, EDE_2(message, key1, key2)};
-
-    for (size_t i = 0; i < 1 << t; i++)
-    {
-        message = rand_gf2_12();
-        addMessage(&base_m_c, message, EDE_2(message, key1, key2));
-    }
-
-    size_t randomACount = 1 << 1;
+    size_t randomACount = 1 << 12;
+    // size_t randomACount = 1;
 
     gf2_12 a, m_i, c_i, b_i;
     MessageCiphertextNode *msnode;
@@ -370,16 +453,16 @@ int main() {
         // and store the values (b_i, i) in the tree base_b_i
         a = rand_gf2_12();
     
-        for (size_t i = 0; i < 1 << 12; i++)
+        for (size_t i = 1; i < 1 << 12; i++)
         {
             // k_1 = i is the guess for key1
             
             // find m_i in the tree base_m_c
             m_i = decrypt(a, (gf2_12) i);
-            msnode = findMessageCiphertextNode(&base_m_c, m_i);
+            msnode = findMessageCiphertextNode(base_m_c, m_i);
             if (msnode == 0)
                 continue;
-
+            
             // printf("possible m_i: %d, c_i: %d\n", msnode->message, msnode->ciphertext);
             // given m_i and its ciphertext, decrypt c_i to get b_i
             c_i = msnode->ciphertext;
@@ -416,13 +499,18 @@ int main() {
             // test if EDE_2(m, i, j) = c holds for all 
             // message-cipthertext pairs in base_m_c
             gf2_12 i = (gf2_12) binode->index;
-            if (testMessageCiphertextAgainstKeys(&base_m_c, i, j) == 0) {
+            if (testMessageCiphertextAgainstKeys(base_m_c, i, j) == 0) {
                 printf("possible key pair: key1: %d, key2: %d\n", i, j);
             }
         }
 
         freeBIndex(&base_b_i);
+        base_b_i.b = 0;
         base_b_i.index = -1;
+        base_b_i.left = 0;
+        base_b_i.right = 0;
     }
+
+    // fclose(file);
 }
 
