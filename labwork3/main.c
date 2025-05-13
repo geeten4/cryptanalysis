@@ -55,11 +55,12 @@ gf2_12 permutation_F(gf2_12 x) {
     // use permutation polynomial g = x^2^5 as a non-linear permutation g: F_2^12 -> F_2^12
     // we can then easily compute its inverse, since
     // (x^2^5)^2^7 = x^2^12 = x in F_2^12
-    return gf_pow(x, 32);
+    return gf_pow(x, 1 << 5);
+    // return gf_pow(x, 2);
 }
 
 gf2_12 invPermutationPolynomial(gf2_12 x) {
-    return gf_pow(x, 128);
+    return gf_pow(x, 1 << 7);
 }
 
 typedef struct Node
@@ -73,11 +74,11 @@ typedef struct Node
 Node *addNodeRecursive(Node *baseNode, Node *newNode) {
 
     if ((baseNode->value < newNode->value) & (baseNode->right != 0))
-        addNodeRecursive(baseNode->right, newNode);
+        return addNodeRecursive(baseNode->right, newNode);
     else if ((baseNode->value < newNode->value) & (baseNode->right == 0))
         baseNode->right = newNode;
     else if ((baseNode->value > newNode->value) & (baseNode->left != 0))
-        addNodeRecursive(baseNode->left, newNode);
+        return addNodeRecursive(baseNode->left, newNode);
     else if ((baseNode->value > newNode->value) & (baseNode->left == 0))
         baseNode->left = newNode;
     else
@@ -93,6 +94,16 @@ Node *addNode(Node *baseNode, size_t i, gf2_12 value) {
     newNode->right = 0;
 
     return addNodeRecursive(baseNode, newNode);
+}
+
+void printNodes(Node *node) {
+    if(node->left != 0) {
+        printNodes(node->left);
+    }
+    printf("value: %d, i: %ld, \n", node->value, node->i);
+    if (node->right != 0) {
+        printNodes(node->right);
+    }
 }
 
 bool isPermutation(gf2_12 (*func)(gf2_12)) {
@@ -172,11 +183,11 @@ typedef struct MessageCiphertextNode
 int addMessageRecursive(MessageCiphertextNode *baseNode, MessageCiphertextNode *newNode) {
 
     if ((baseNode->message < newNode->message) & (baseNode->right != 0))
-        addMessageRecursive(baseNode->right, newNode);
+        return addMessageRecursive(baseNode->right, newNode);
     else if ((baseNode->message < newNode->message) & (baseNode->right == 0))
         baseNode->right = newNode;
     else if ((baseNode->message > newNode->message) & (baseNode->left != 0))
-        addMessageRecursive(baseNode->left, newNode);
+        return addMessageRecursive(baseNode->left, newNode);
     else if ((baseNode->message > newNode->message) & (baseNode->left == 0))
         baseNode->left = newNode;
     else
@@ -195,25 +206,17 @@ int addMessage(MessageCiphertextNode *baseNode, gf2_12 message, gf2_12 ciphertex
 }
 
 MessageCiphertextNode* findMessageCiphertextNode(MessageCiphertextNode *baseNode, gf2_12 message) {
-    MessageCiphertextNode *node = baseNode;
-
-    while (true) {
-        if (node->message == message) {
-            return node;
-        } else if ((node->message < message) & (node->right == 0)) {
-            return 0;
-        } else if ((node->message < message) & (node->right != 0)) {
-            node = node->right;
-            continue;
-        } else if ((node->message > message) & (node->left == 0)) {
-            return 0;
-        } else if ((node->message > message) & (node->left != 0)) {
-            node = node->left;
-            continue;
-        } else {
-            return 0;
-        }
-    }
+    if (baseNode->message == message)
+        return baseNode;
+    else if ((baseNode->message < message) && (baseNode->right == 0))
+        return 0;
+    else if ((baseNode->message < message) && (baseNode->right != 0))
+        return findMessageCiphertextNode(baseNode->right, message);
+    else if ((baseNode->message > message) && (baseNode->left == 0))
+        return 0;
+    else if ((baseNode->message > message) && (baseNode->left != 0))
+        return findMessageCiphertextNode(baseNode->left, message);
+    return 0;
 }
 
 void printMessageCiphertextNode(MessageCiphertextNode *node) {
@@ -254,15 +257,14 @@ typedef struct BIndexNode
     struct BIndexNode* right;
 } BIndexNode;
 
-
 int addBIndexRecursive(BIndexNode *baseNode, BIndexNode *newNode) {
 
     if ((baseNode->b <= newNode->b) & (baseNode->right != 0))
-        addBIndexRecursive(baseNode->right, newNode);
+        return addBIndexRecursive(baseNode->right, newNode);
     else if ((baseNode->b <= newNode->b) & (baseNode->right == 0))
         baseNode->right = newNode;
     else if ((baseNode->b > newNode->b) & (baseNode->left != 0))
-        addBIndexRecursive(baseNode->left, newNode);
+        return addBIndexRecursive(baseNode->left, newNode);
     else if ((baseNode->b > newNode->b) & (baseNode->left == 0))
         baseNode->left = newNode;
     else
@@ -402,32 +404,79 @@ MessageCipherTextBaseWithKeys *readMessageCiphertextTreeFromFile(FILE *file) {
     return base_with_keys;
 }
 
+typedef struct KeyPair
+{
+    gf2_12 key1;
+    gf2_12 key2;
+    struct KeyPair *left;
+    struct KeyPair *right;
+} KeyPair;
+
+int addKeyPairRecursive(KeyPair *kp_base, KeyPair *kp_new) {
+    int32_t indexNew = (kp_new->key1 << 12) ^ kp_new->key2;
+    int32_t indexBase = (kp_base->key1 << 12) ^ kp_base->key2;
+
+    if ((indexNew < indexBase) && (kp_base->left != 0)){
+        return addKeyPairRecursive(kp_base->left, kp_new);
+        }
+    else if ((indexNew < indexBase) && (kp_base->left == 0)){
+        kp_base->left = kp_new;
+        }
+    else if ((indexNew > indexBase) && (kp_base->right != 0)){
+        return addKeyPairRecursive(kp_base->right, kp_new);
+        }
+    else if ((indexNew > indexBase) && (kp_base->right == 0)){
+        kp_base->right = kp_new;
+        }
+    else{
+        return 1;}
+    return 0;
+}
+
+int addKeyPair(KeyPair *kp_base, gf2_12 key1, gf2_12 key2) {
+    KeyPair *kp = malloc(sizeof(KeyPair));
+    kp->key1 = key1;
+    kp->key2 = key2;
+    kp->left = 0;
+    kp->right = 0;
+    return addKeyPairRecursive(kp_base, kp);
+}
+
 int main() {
     
     srand(time(NULL));   // Initialization, should only be called once.
 
     // assert the permutation F is in fact a permutation
     assert(isPermutation(permutation_F));
+    
+    // assert the permutation F^-1 is in fact a permutation
+    assert(isPermutation(invPermutationPolynomial));
 
     // assert the permutation F is non-linear
     assert(!(isLinear(permutation_F)));
 
+    // return 0;
+
     // are inverses
     for (gf2_12 x = 0; x < 4096; x++)
     {
-        assert(invPermutationPolynomial(permutation_F(x)) == x);
+        if (invPermutationPolynomial(permutation_F(x)) != x) {
+            printf("invPermutationPolynomial(permutation_F(%d)) == %d != %d", x, invPermutationPolynomial(permutation_F(x)), x);
+            return 1;
+        }
+        // assert(invPermutationPolynomial(permutation_F(x)) != x);
     }
 
     // generate random keys and message-ciphertext pairs
-    gf2_12 key1 = rand_gf2_12(), key2 = rand_gf2_12();
-    MessageCiphertextNode *base_m_c = randomMessageCiphertextTree(key1, key2, 20);
+    // gf2_12 key1 = rand_gf2_12(), key2 = rand_gf2_12();
+    // MessageCiphertextNode *base_m_c = randomMessageCiphertextTree(key1, key2, 20);
 
     // read random keys and message-ciphertext pairs from a csv file
-    // FILE *file = fopen("message_ciphertext.csv", "r");
-    // MessageCipherTextBaseWithKeys *base_with_keys = readMessageCiphertextTreeFromFile(file);
-    // MessageCiphertextNode *base_m_c = base_with_keys->baseNode;
-    // gf2_12 key1 = base_with_keys->key1;
-    // gf2_12 key2 = base_with_keys->key2;
+    FILE *file = fopen("message_ciphertext.csv", "r");
+    MessageCipherTextBaseWithKeys *base_with_keys = readMessageCiphertextTreeFromFile(file);
+    MessageCiphertextNode *base_m_c = base_with_keys->baseNode;
+    gf2_12 key1 = base_with_keys->key1;
+    gf2_12 key2 = base_with_keys->key2;
 
     // print keys
     printf("key1: %d, key2: %d\n", key1, key2);
@@ -435,10 +484,7 @@ int main() {
     // printMessageCiphertextNode(base_m_c);
     // return 0;
 
-    size_t randomACount = 1 << 12;
-    // size_t randomACount = 1;
-
-    gf2_12 a, m_i, c_i, b_i;
+    gf2_12 m_i, c_i, b_i;
     MessageCiphertextNode *msnode;
     BIndexNode base_b_i = {
         .b = 0,
@@ -446,23 +492,28 @@ int main() {
         .left = 0,
         .right = 0
     };
-    for (size_t randomACounter = 0; randomACounter < randomACount; randomACounter++)
+    KeyPair kp_base = {0, 0, 0, 0};
+
+    for (gf2_12 asd = 0; asd < (1 << 0); asd++)
     {
         // guess A = a, run through all values of k_1=i, compute m_i = decrypt(a, i),
         // if m_i is in base_m_c tree, then we find c_i, find b_i = decrypt(c_i, i)
         // and store the values (b_i, i) in the tree base_b_i
-        a = rand_gf2_12();
-    
-        for (size_t i = 1; i < 1 << 12; i++)
+
+        // printf("a: %d\n", a);
+        gf2_12 a = 94;
+
+        // for (size_t i = 1; i < 4096; i++)
+        for (size_t i = 3004; i < 3129; i++)
         {
             // k_1 = i is the guess for key1
             
             // find m_i in the tree base_m_c
-            m_i = decrypt(a, (gf2_12) i);
+            m_i = decrypt(a, (gf2_12)i);
             msnode = findMessageCiphertextNode(base_m_c, m_i);
             if (msnode == 0)
                 continue;
-            
+
             // printf("possible m_i: %d, c_i: %d\n", msnode->message, msnode->ciphertext);
             // given m_i and its ciphertext, decrypt c_i to get b_i
             c_i = msnode->ciphertext;
@@ -482,6 +533,7 @@ int main() {
         }
         
         // printBIndexNode(&base_b_i);
+        // return 0;
 
         // iterate over all values of k_2 to find b_j = decrypt(a, j)
         gf2_12 b_j;
@@ -490,17 +542,31 @@ int main() {
         for (gf2_12 j = 0; j < 1 << 12; j++)
         {
             // k_2 = j is the guess for key2
+            // if(j != 372)
+            //     continue;
             b_j = decrypt(a, j);
+
+            // TODO: returns exaclty one, but multiplicites are present???
             binode = findBIndexNode(&base_b_i, b_j);
             if (binode == 0)
                 continue;
             
+            printf("binode: %ld\n", binode->index);
+
             // we found a b_j s.t. b_j = decrypt(a, j)
             // test if EDE_2(m, i, j) = c holds for all 
             // message-cipthertext pairs in base_m_c
-            gf2_12 i = (gf2_12) binode->index;
-            if (testMessageCiphertextAgainstKeys(base_m_c, i, j) == 0) {
-                printf("possible key pair: key1: %d, key2: %d\n", i, j);
+            gf2_12 index = (gf2_12) binode->index;
+            if (testMessageCiphertextAgainstKeys(base_m_c, index, j) == 0) {
+                if(kp_base.key1 == 0 && kp_base.key2 == 0 && kp_base.left == 0 && kp_base.right == 0) {
+                    kp_base.key1 = index;
+                    kp_base.key2 = j;
+                    printf("possible key pair: key1: %d, key2: %d\n", index, j);
+                } else {
+                    if(addKeyPair(&kp_base, index, j) == 0) {
+                        printf("possible key pair: key1: %d, key2: %d\n", index, j);
+                    }
+                }
             }
         }
 
