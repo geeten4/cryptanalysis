@@ -8,8 +8,10 @@
 #include <stdint.h>
 
 #define FIELD_MODULUS 0x107b  // F_2^12 modulus x^12 + x^7 + x^6 + x^5 + x^3 + x + 1
+#define FIELD_SIZE = 4096
 typedef uint16_t gf2_12;  // Field element: 12 bits max
 
+gf2_12 *permutation_F;
 
 gf2_12 gf_add(gf2_12 a, gf2_12 b) {
     return a ^ b;
@@ -42,21 +44,6 @@ gf2_12 gf_pow(gf2_12 base, uint16_t exponent) {
         exponent >>= 1;
     }
     return result;
-}
-
-gf2_12 permutation_F(gf2_12 x) {
-    // represent F_2^12 as F_2[x] / f, where f = x^12 + x^7 + x^6 + x^5 + x^3 + x + 1
-    // we can write these polynomials as integers < 2^12 modulo 0b0001000001111011 = 0x107b =  4219
-
-    // use permutation polynomial g = x^3 + x + 1 as a non-linear permutation g: F_2^12 -> F_2^12
-    // long int longerX = x % FIELD_MODULUS;
-    // return (longerX * longerX * longerX + longerX + 1) % FIELD_MODULUS;
-
-    // use permutation polynomial g = x^2^5 as a non-linear permutation g: F_2^12 -> F_2^12
-    // we can then easily compute its inverse, since
-    // (x^2^5)^2^7 = x^2^12 = x in F_2^12
-    return gf_pow(x, 1 << 5);
-    // return gf_pow(x, 2);
 }
 
 gf2_12 invPermutationPolynomial(gf2_12 x) {
@@ -160,7 +147,7 @@ bool isLinear(gf2_12 (*func)(gf2_12)) {
 
 gf2_12 encrypt(gf2_12 x, gf2_12 key) {
     // F(x + key) + key
-    return gf_add(permutation_F(gf_add(x, key)), key);
+    return gf_add(permutation_F[gf_add(x, key)], key);
 }
 
 gf2_12 decrypt(gf2_12 x, gf2_12 key) {
@@ -442,30 +429,54 @@ int addKeyPair(KeyPair *kp_base, gf2_12 key1, gf2_12 key2) {
     return addKeyPairRecursive(kp_base, kp);
 }
 
+gf2_12* initPermumtation(FILE *file) {
+    // read from csv file
+    char* line = NULL;
+    size_t len = 0;
+
+    gf2_12* permutation = malloc(4096 * sizeof(gf2_12));
+
+    int x;    
+    // read message-ciphertext pairs
+    while (getline(&line, &len, file) != -1) {
+        getline(&line, &len, file);
+        sscanf(line, "%d", &x);
+        permutation[len] = x;
+    }
+
+    return permutation;
+}
+
 int main() {
     
+    // initialize permutation F along with its inverse
+    FILE *permutatino_file = fopen("labwork3/random_permutation.txt.csv", "r");
+    permutation_F = initPermumtation(permutatino_file);
+
+
     srand(time(NULL));   // Initialization, should only be called once.
 
     // assert the permutation F is in fact a permutation
-    assert(isPermutation(permutation_F));
+    // assert(isPermutation(permutation_F));  # TODO: rework
     
     // assert the permutation F^-1 is in fact a permutation
     assert(isPermutation(invPermutationPolynomial));
 
     // assert the permutation F is non-linear
-    assert(!(isLinear(permutation_F)));
+    // assert(!(isLinear(permutation_F)));  # TODO: rework
 
     // return 0;
 
     // are inverses
-    for (gf2_12 x = 0; x < 4096; x++)
-    {
-        if (invPermutationPolynomial(permutation_F(x)) != x) {
-            printf("invPermutationPolynomial(permutation_F(%d)) == %d != %d", x, invPermutationPolynomial(permutation_F(x)), x);
-            return 1;
-        }
-        // assert(invPermutationPolynomial(permutation_F(x)) != x);
-    }
+    // TODO: reowrk
+    // for (gf2_12 x = 0; x < 4096; x++)
+    // {
+    //     if (invPermutationPolynomial(permutation_F(x)) != x) {
+    //         printf("invPermutationPolynomial(permutation_F(%d)) == %d != %d", x, invPermutationPolynomial(permutation_F(x)), x);
+    //         return 1;
+    //     }
+    //     // assert(invPermutationPolynomial(permutation_F(x)) != x);
+    // }
 
     // generate random keys and message-ciphertext pairs
     // gf2_12 key1 = rand_gf2_12(), key2 = rand_gf2_12();
@@ -474,6 +485,7 @@ int main() {
     // read random keys and message-ciphertext pairs from a csv file
     FILE *file = fopen("message_ciphertext.csv", "r");
     MessageCipherTextBaseWithKeys *base_with_keys = readMessageCiphertextTreeFromFile(file);
+    fclose(file);
     MessageCiphertextNode *base_m_c = base_with_keys->baseNode;
     gf2_12 key1 = base_with_keys->key1;
     gf2_12 key2 = base_with_keys->key2;
@@ -576,7 +588,5 @@ int main() {
         base_b_i.left = 0;
         base_b_i.right = 0;
     }
-
-    // fclose(file);
 }
 
