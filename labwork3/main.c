@@ -12,6 +12,7 @@
 typedef uint16_t gf2_12;  // Field element: 12 bits max
 
 gf2_12 *permutation_F;
+gf2_12 *permutation_F_inverse;
 
 gf2_12 gf_add(gf2_12 a, gf2_12 b) {
     return a ^ b;
@@ -44,10 +45,6 @@ gf2_12 gf_pow(gf2_12 base, uint16_t exponent) {
         exponent >>= 1;
     }
     return result;
-}
-
-gf2_12 invPermutationPolynomial(gf2_12 x) {
-    return gf_pow(x, 1 << 7);
 }
 
 typedef struct Node
@@ -93,13 +90,13 @@ void printNodes(Node *node) {
     }
 }
 
-bool isPermutation(gf2_12 (*func)(gf2_12)) {
-    Node baseNode = {0, 0, 0, 0};
+bool isPermutation(gf2_12* permutation) {
+    Node baseNode = {0, permutation[0], 0, 0};
 
     // check permutation_F is in fact a permutation
     for (size_t i = 1; i < 4096; i++)
     {
-        gf2_12 f_i = func((gf2_12) i);
+        gf2_12 f_i = permutation[i];
         Node *collisionNode = addNode(&baseNode, i, f_i);
         if(collisionNode != 0) {
             printf("colliding nodes: i: %ld, value: %d and i: %ld, value: %d", collisionNode->i, collisionNode->value, i, f_i);
@@ -123,7 +120,7 @@ void printBytes(gf2_12 x) {
     }
 }
 
-bool isLinear(gf2_12 (*func)(gf2_12)) {
+bool isLinear(gf2_12* permutation) {
     // check it is non-linear
     gf2_12 f_i, f_j, f_ipj;
     for (size_t i = 0; i < 4096; i++)
@@ -133,9 +130,9 @@ bool isLinear(gf2_12 (*func)(gf2_12)) {
             if (i == j)
                 continue;
 
-            f_i = func((gf2_12) i);
-            f_j = func((gf2_12) j);
-            f_ipj = func((gf2_12) i+j);
+            f_i = permutation[i];
+            f_j = permutation[j];
+            f_ipj = permutation[(i+j) & 4096];
 
             if((f_i ^ f_j) != f_ipj) {
                 return false;
@@ -152,7 +149,7 @@ gf2_12 encrypt(gf2_12 x, gf2_12 key) {
 
 gf2_12 decrypt(gf2_12 x, gf2_12 key) {
     // F^-1(x + key) + key
-    return gf_add(invPermutationPolynomial(gf_add(x, key)), key);
+    return gf_add(permutation_F_inverse[gf_add(x, key)], key);
 }
 
 gf2_12 EDE_2(gf2_12 m, gf2_12 k_1, gf2_12 k_2) {
@@ -438,10 +435,11 @@ gf2_12* initPermumtation(FILE *file) {
 
     int x;    
     // read message-ciphertext pairs
+    size_t counter = 0;
     while (getline(&line, &len, file) != -1) {
-        getline(&line, &len, file);
         sscanf(line, "%d", &x);
-        permutation[len] = x;
+        permutation[counter] = (gf2_12) x;
+        counter++;
     }
 
     return permutation;
@@ -450,33 +448,37 @@ gf2_12* initPermumtation(FILE *file) {
 int main() {
     
     // initialize permutation F along with its inverse
-    FILE *permutatino_file = fopen("labwork3/random_permutation.txt.csv", "r");
-    permutation_F = initPermumtation(permutatino_file);
+    FILE *permutation_file = fopen("./labwork3/random_permutation.txt", "r");
+    permutation_F = initPermumtation(permutation_file);
+    fclose(permutation_file);
 
+    FILE *permutation_inverse_file = fopen("./labwork3/random_inverse_permutation.txt", "r");
+    permutation_F_inverse = initPermumtation(permutation_inverse_file);
+    fclose(permutation_inverse_file);
 
     srand(time(NULL));   // Initialization, should only be called once.
 
     // assert the permutation F is in fact a permutation
-    // assert(isPermutation(permutation_F));  # TODO: rework
+    assert(isPermutation(permutation_F));
     
     // assert the permutation F^-1 is in fact a permutation
-    assert(isPermutation(invPermutationPolynomial));
+    assert(isPermutation(permutation_F_inverse));
 
     // assert the permutation F is non-linear
-    // assert(!(isLinear(permutation_F)));  # TODO: rework
-
-    // return 0;
+    assert(!(isLinear(permutation_F)));
 
     // are inverses
-    // TODO: reowrk
-    // for (gf2_12 x = 0; x < 4096; x++)
-    // {
-    //     if (invPermutationPolynomial(permutation_F(x)) != x) {
-    //         printf("invPermutationPolynomial(permutation_F(%d)) == %d != %d", x, invPermutationPolynomial(permutation_F(x)), x);
-    //         return 1;
-    //     }
-    //     // assert(invPermutationPolynomial(permutation_F(x)) != x);
-    // }
+    for (gf2_12 x = 0; x < 4096; x++)
+    {
+        if (permutation_F_inverse[permutation_F[x]] != x) {
+            printf("permutation_F_inverse[permutation_F[%d]] == %d != %d", x, permutation_F_inverse[permutation_F[x]], x);
+            return 1;
+        }
+        if (permutation_F[permutation_F_inverse[x]] != x) {
+            printf("permutation_F[permutation_F_inverse[%d]] == %d != %d", x, permutation_F[permutation_F_inverse[x]], x);
+            return 1;
+        }
+    }
 
     // generate random keys and message-ciphertext pairs
     // gf2_12 key1 = rand_gf2_12(), key2 = rand_gf2_12();
@@ -496,6 +498,9 @@ int main() {
     // printMessageCiphertextNode(base_m_c);
     // return 0;
 
+    printf("%d", EDE_2(21, 3128, 372));
+    printf("%d", encrypt(decrypt(encrypt(21, 3128), 372), 3128));
+
     gf2_12 m_i, c_i, b_i;
     MessageCiphertextNode *msnode;
     BIndexNode base_b_i = {
@@ -506,17 +511,16 @@ int main() {
     };
     KeyPair kp_base = {0, 0, 0, 0};
 
-    for (gf2_12 asd = 0; asd < (1 << 0); asd++)
+    for (gf2_12 randomACount = 0; randomACount < (1 << 0); randomACount++)
     {
         // guess A = a, run through all values of k_1=i, compute m_i = decrypt(a, i),
         // if m_i is in base_m_c tree, then we find c_i, find b_i = decrypt(c_i, i)
         // and store the values (b_i, i) in the tree base_b_i
 
-        // printf("a: %d\n", a);
+        // gf2_12 a = rand_gf2_12();
         gf2_12 a = 94;
 
-        // for (size_t i = 1; i < 4096; i++)
-        for (size_t i = 3004; i < 3129; i++)
+        for (size_t i = 0; i < 4096; i++)
         {
             // k_1 = i is the guess for key1
             
@@ -563,7 +567,7 @@ int main() {
             if (binode == 0)
                 continue;
             
-            printf("binode: %ld\n", binode->index);
+            // printf("binode: %ld\n", binode->index);
 
             // we found a b_j s.t. b_j = decrypt(a, j)
             // test if EDE_2(m, i, j) = c holds for all 
