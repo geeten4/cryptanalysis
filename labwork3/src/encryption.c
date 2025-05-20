@@ -1,3 +1,6 @@
+#include "encryption.h"
+#include "gf.h"
+#include "permutation.h"
 
 gf2_12 encrypt(gf2_12 x, gf2_12 key) {
     // F(x + key) + key

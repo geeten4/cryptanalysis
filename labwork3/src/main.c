@@ -1,24 +1,30 @@
 #include <assert.h>
-#include <stdbool.h> 
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
-#include <stdint.h>
 
 #include "gf.h"
+#include "mc.h"
+#include "bindex.h"
+#include "keypair.h"
+#include "permutation.h"
+#include "encryption.h"
+
+#define LABOWRK3_RADOM_PERMUTATION_PATH "labwork3/data/random_permutation.txt"
+#define LABOWRK3_RADOM_INVERSE_PERMUTATION_PATH "labwork3/data/random_inverse_permutation.txt"
+#define MESSAGE_CIPHERTEXT_PATH "labwork3/data/message_ciphertext.csv"
 
 
 int main() {
     
     // initialize permutation F along with its inverse
-    FILE *permutation_file = fopen("./labwork3/random_permutation.txt", "r");
-    permutation_F = initPermumtation(permutation_file);
+    FILE *permutation_file = fopen(LABOWRK3_RADOM_PERMUTATION_PATH, "r");
+    initPermutation(permutation_F, permutation_file);
     fclose(permutation_file);
 
-    FILE *permutation_inverse_file = fopen("./labwork3/random_inverse_permutation.txt", "r");
-    permutation_F_inverse = initPermumtation(permutation_inverse_file);
+    FILE *permutation_inverse_file = fopen(LABOWRK3_RADOM_INVERSE_PERMUTATION_PATH, "r");
+    initPermutation(permutation_F_inverse, permutation_inverse_file);
     fclose(permutation_inverse_file);
 
     srand(time(NULL));   // Initialization, should only be called once.
@@ -45,14 +51,11 @@ int main() {
         }
     }
 
-    // generate random keys and message-ciphertext pairs
-    // gf2_12 key1 = rand_gf2_12(), key2 = rand_gf2_12();
-    // MessageCiphertextNode *base_m_c = randomMessageCiphertextTree(key1, key2, 20);
-
     // read random keys and message-ciphertext pairs from a csv file
-    FILE *file = fopen("message_ciphertext.csv", "r");
+    FILE *file = fopen(MESSAGE_CIPHERTEXT_PATH, "r");
     MessageCipherTextBaseWithKeys *base_with_keys = readMessageCiphertextTreeFromFile(file);
     fclose(file);
+
     MessageCiphertextNode *base_m_c = base_with_keys->baseNode;
     gf2_12 key1 = base_with_keys->key1;
     gf2_12 key2 = base_with_keys->key2;
@@ -60,8 +63,8 @@ int main() {
     // print keys
     printf("key1: %d, key2: %d\n", key1, key2);
     // print tree
-    // printMessageCiphertextNode(base_m_c);
-    // return 0;
+    printMessageCiphertextNode(base_m_c);
+    return 0;
 
     printf("%d", EDE_2(21, 3128, 372));
     printf("%d", encrypt(decrypt(encrypt(21, 3128), 372), 3128));

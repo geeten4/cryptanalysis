@@ -1,11 +1,9 @@
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-typedef struct Node
-{
-    size_t i;
-    gf2_12 value;
-    struct Node *left;
-    struct Node *right;
-} Node;
+#include "permutation.h"
+
 
 Node *addNodeRecursive(Node *baseNode, Node *newNode) {
 
@@ -94,22 +92,21 @@ bool isLinear(gf2_12* permutation) {
     return true;
 }
 
-
-gf2_12* initPermumtation(FILE *file) {
+void initPermutation(gf2_12 *permutation, FILE *file) {
     // read from csv file
     char* line = NULL;
     size_t len = 0;
 
-    gf2_12* permutation = malloc(4096 * sizeof(gf2_12));
+    gf2_12* p = malloc(4096 * sizeof(gf2_12));
 
     int x;    
     // read message-ciphertext pairs
     size_t counter = 0;
     while (getline(&line, &len, file) != -1) {
         sscanf(line, "%d", &x);
-        permutation[counter] = (gf2_12) x;
+        p[counter] = (gf2_12) x;
         counter++;
     }
 
-    return permutation;
+    permutation = p;
 }

@@ -1,12 +1,11 @@
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
 
+#include "bindex.h"
+#include "gf.h"
 
-typedef struct BIndexNode
-{
-    gf2_12 b;
-    size_t index;
-    struct BIndexNode* left;
-    struct BIndexNode* right;
-} BIndexNode;
 
 int addBIndexRecursive(BIndexNode *baseNode, BIndexNode *newNode) {
 

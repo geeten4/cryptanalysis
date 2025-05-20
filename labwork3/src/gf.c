@@ -1,7 +1,7 @@
+#include <stdlib.h>
+
 #include "gf.h"
 
-gf2_12 *permutation_F;
-gf2_12 *permutation_F_inverse;
 
 gf2_12 gf_add(gf2_12 a, gf2_12 b) {
     return a ^ b;

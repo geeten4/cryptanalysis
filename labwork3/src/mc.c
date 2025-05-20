@@ -1,11 +1,11 @@
+#include <stddef.h>
+#include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
 
-typedef struct MessageCiphertextNode
-{
-    gf2_12 message;
-    gf2_12 ciphertext;
-    struct MessageCiphertextNode* left;
-    struct MessageCiphertextNode* right;
-} MessageCiphertextNode;
+#include "mc.h"
+#include "encryption.h"
+
 
 int addMessageRecursive(MessageCiphertextNode *baseNode, MessageCiphertextNode *newNode) {
 
@@ -107,12 +107,6 @@ void randomMessageCiphertextToFile(FILE *file, gf2_12 key1, gf2_12 key2, int t) 
     }
 
 }
-
-typedef struct MessageCipherTextBaseWithKeys {
-    MessageCiphertextNode *baseNode;
-    gf2_12 key1;
-    gf2_12 key2;
-} MessageCipherTextBaseWithKeys;
 
 MessageCipherTextBaseWithKeys *readMessageCiphertextTreeFromFile(FILE *file) {
     // read from csv file

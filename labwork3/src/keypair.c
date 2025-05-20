@@ -1,11 +1,6 @@
+#include <stdlib.h>
 
-typedef struct KeyPair
-{
-    gf2_12 key1;
-    gf2_12 key2;
-    struct KeyPair *left;
-    struct KeyPair *right;
-} KeyPair;
+#include "keypair.h"
 
 int addKeyPairRecursive(KeyPair *kp_base, KeyPair *kp_new) {
     int32_t indexNew = (kp_new->key1 << 12) ^ kp_new->key2;

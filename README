@@ -7,3 +7,33 @@ cryptanalysis.sh X
 ```
 
 where X is the number of the corresponding labwork
+
+
+# Third homework
+
+generate random permutation with `/labwork3/python/gen_random_permutation.py` via
+
+```
+python3 ./labwork3/python/gen_random_permutation.py
+```
+
+and it stores a random permutation of GF(2^12) in `/labwork3/data/random_permutation.txt` along
+with its inverse in `/labwork3/data/random_inverse_permutation.txt`
+
+To generate random message-ciphertext pairs, first compile the encryption functions to a shared .so object
+
+```
+make encryption.so
+```
+
+this compiles to a shared object `/bin/encryption.so`
+
+# TODO: accept t as parametr for python script
+
+and run the python script for random pairs generation
+
+```
+python3 ./labwork3/python/gen_message_ciphertext_pairs.py
+```
+
+it stores the pairs in `/labwork3/data/message_ciphertext.csv`
