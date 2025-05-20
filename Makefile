@@ -1,30 +1,30 @@
-# Compiler and flags
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c11
+# Directories
+SRC_DIR := labwork3
+BUILD_DIR := bin
 
-# Source files
-SRCS = main.c
+# Files
+SRCS := $(wildcard $(SRC_DIR)/*.c)
+OBJS := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRCS))
 
-# Object files
-OBJS = $(SRCS:.c=.o)
+# Compiler
+CC := gcc
+CFLAGS := -Wall -I$(SRC_DIR)
 
-# Output executable name
-TARGET = myprogram
+# Target
+TARGET := $(BUILD_DIR)/labwork3
 
-# Default rule
-all: $(TARGET)
+# Default target
+labwork3: $(TARGET)
 
-# Linking
+# Link the final binary
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(OBJS) -o $@
 
-# Compile .c to .o
-%.o: %.c
+# Compile source files to object files
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Clean build files
+# Clean
 clean:
-	rm -f $(OBJS) $(TARGET)
-
-# Optional: phony targets to avoid name conflicts
-.PHONY: all clean
+	rm -rf $(BUILD_DIR)/*.o $(TARGET)

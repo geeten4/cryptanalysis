@@ -1,7 +1,8 @@
 import random
+import os
 
 
-DEST_FILE_MESSAGE_CIPHERTEXT_PAIRS = 'labwork3/message_ciphertext.csv'
+DEST_FILE_MESSAGE_CIPHERTEXT_PAIRS = os.path.dirname(os.path.abspath(__file__)) + '../data/message_ciphertext.csv'
 FIELD_SIZE = 4096
 
 # read permutations
