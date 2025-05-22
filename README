@@ -20,10 +20,14 @@ python3 ./labwork3/python/gen_random_permutation.py
 and it stores a random permutation of GF(2^12) in `/labwork3/data/random_permutation.txt` along
 with its inverse in `/labwork3/data/random_inverse_permutation.txt`
 
+## NOTE
+regenerating the permutation means the message-ciphertext pairs are incompatible with the permutation,
+we have to regenerate message-ciphertext pairs as well
+
 To generate random message-ciphertext pairs, first compile the encryption functions to a shared .so object
 
 ```
-make encryption.so
+make encryption
 ```
 
 this compiles to a shared object `/bin/encryption.so`

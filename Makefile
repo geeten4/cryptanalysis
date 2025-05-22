@@ -34,6 +34,12 @@ ENCRYPTION_TARGET := $(BUILD_DIR)/encryption.so
 ENCRYPTION_SRCS := $(SRC_DIR)/encryption.c $(SRC_DIR)/gf.c $(SRC_DIR)/permutation.c
 ENCRYPTION_OBJS := $(patsubst $(SRC_DIR)%.c, $(BUILD_DIR)%_shared.o, $(ENCRYPTION_SRCS))
 
+# generate shared library of encryption functions for python
+
+.PHONY: encryption
+
+encryption: encryption.so
+
 encryption.so: $(ENCRYPTION_TARGET)
 
 $(ENCRYPTION_TARGET): $(ENCRYPTION_OBJS)
