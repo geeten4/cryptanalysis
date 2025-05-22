@@ -57,3 +57,33 @@ gf2_11 permutation_inverse(gf2_11 x) {
     assert(x < FIELD_SIZE);
     return permutation_inverse_data[x];
 }
+
+void print_gf2_11_bytes(gf2_11 x) {
+    assert(x < FIELD_SIZE);
+    for (int i = 10; i >= 0 ; i--)
+    {
+        if ((x >> i) % 2 == 0) {
+            printf("%d", 0);
+        } else {
+            printf("%d", 1);
+        }
+        if (i % 4 == 0) {
+            printf(" ");
+        }
+    }
+}
+
+void print_double_gf2_11_bytes(double_gf2_11 x) {
+    assert(x < FIELD_SIZE * FIELD_SIZE);
+    for (int i = 21; i >= 0 ; i--)
+    {
+        if ((x >> i) % 2 == 0) {
+            printf("%d", 0);
+        } else {
+            printf("%d", 1);
+        }
+        if (i % 4 == 0) {
+            printf(" ");
+        }
+    }
+}

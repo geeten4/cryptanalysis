@@ -4,6 +4,7 @@
         "stdbool.h": "c",
         "assert.h": "c",
         "stdio.h": "c",
-        "stddef.h": "c"
+        "stddef.h": "c",
+        "stdint.h": "c"
     }
 }
