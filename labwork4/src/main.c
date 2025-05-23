@@ -12,7 +12,7 @@
 int main() {
     srand(time(NULL));   // Initialization, should only be called once.
 
-    size_t roundCount = 2;
+    size_t roundCount = 6;
     // initialize keys
     gf2_11 *keys = malloc(roundCount * sizeof(gf2_11));
     for (size_t i = 0; i < roundCount; i++)
@@ -23,7 +23,7 @@ int main() {
         printf("\n");
     }
     
-    double_gf2_11 message = 1234;
+    double_gf2_11 message = 123456;
     printf("message: ");
     print_double_gf2_11_bytes(message);
     printf("\n");
