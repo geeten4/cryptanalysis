@@ -80,6 +80,35 @@ $(BUILD_DIR4)/%.o: $(SRC_DIR4)/%.c
 	$(CC) $(CFLAGS4) -c $< -o $@
 
 
+# ------ LABWORK 5
+
+
+# directories
+SRC_DIR5 := labwork5/src
+CFLAGS5 := -Wall -I$(SRC_DIR5)
+BUILD_DIR5 := bin/labwork5
+
+# files
+SRCS5 := $(wildcard $(SRC_DIR5)/*.c)
+OBJS5 := $(patsubst $(SRC_DIR5)/%.c, $(BUILD_DIR5)/%.o, $(SRCS5))
+
+# target
+TARGET5 := $(BUILD_DIR5)/labwork5
+
+# default target
+.PHONY: labwork5
+labwork5: $(TARGET5)
+
+# link the final binary
+$(TARGET5): $(OBJS5)
+	$(CC) $(OBJS5) -o $@
+
+# compile source files to object files
+$(BUILD_DIR5)/%.o: $(SRC_DIR5)/%.c
+	@mkdir -p $(BUILD_DIR5)
+	$(CC) $(CFLAGS5) -c $< -o $@
+
+
 # cleaning
 .PHONY: clean
 clean:
