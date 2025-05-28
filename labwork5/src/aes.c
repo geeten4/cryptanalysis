@@ -8,8 +8,31 @@
 //                                0, 1, 2,  3,  4,  5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15
 static const uint8_t S_Box[16] = {0, 1, 9, 14, 13, 11, 7, 6, 15, 2, 12,  5, 10,  4,  3,  8};
 
+aes_state random_aes_state() {
+    aes_state state = malloc(16 * sizeof(uint8_t));
+    for (size_t j = 0; j < 16; j++)
+    {
+        state[j] = (uint8_t) rand();
+    }
+    return state;
+}
+
+aes_state *generate_keys(size_t key_count) {
+    aes_state *keys = malloc(key_count * sizeof(aes_state*));
+    for (size_t i = 0; i < key_count; i++)
+    {
+        keys[i] = random_aes_state();
+    }
+    return keys;
+}
+
 aes_state create_aes_state() {
     return malloc(sizeof(uint8_t) * 16);
+}
+
+void copy_aes_state(aes_state from, aes_state to) {
+    for (size_t i = 0; i < 16; i++)
+        to[i] = from[i];
 }
 
 void print_aes_state(aes_state state) {
@@ -29,6 +52,14 @@ void free_aes_state(aes_state state) {
     free(state);
 }
 
+void AddRoundKey(aes_state state, aes_state roundKey) {
+    for (size_t i = 0; i < 16; i++)
+    {
+        state[i] ^= roundKey[i];
+    }
+    
+}
+
 void SubBytes(aes_state state) {
     /*
         use the 4-bit S-box to subsitute upper and lower nibble of a byte
@@ -43,16 +74,47 @@ void SubBytes(aes_state state) {
 }
 
 void ShiftRows(aes_state state) {
-    uint8_t helper;
-    for (size_t i = 1; i < 4; i++)
-    {
-        helper = state[i];
-        for (size_t j = 1; j < 4; j++)
-        {
-            state[(i + 4*j - 4) % 16] = state[(i + 4*j) % 16];
-        }
-        state[(i + 12) % 16] = helper;
-    }
+    uint8_t helper = state[1];
+    // second row:
+    for (size_t i = 0; i < 3; i++)
+        state[1 + 4*i] = state[1 + 4*i + 4];
+    state[13] = helper;
+
+    // third row
+    helper = state[2];
+    state[2] = state[10];
+    state[10] = helper;    
+    helper = state[6];
+    state[6] = state[14];
+    state[14] = helper;    
+
+    // last row
+    helper = state[15];
+    for (size_t i = 0; i < 3; i++)
+        state[15 - 4*i] = state[15 - 4*i - 4];
+    state[3] = helper;
+}
+
+void ShiftRowsInv(aes_state state) {
+    uint8_t helper = state[13];
+    // second row:
+    for (size_t i = 0; i < 3; i++)
+        state[13 - 4*i] = state[13 - 4*i - 4];
+    state[1] = helper;
+
+    // third row
+    helper = state[2];
+    state[2] = state[10];
+    state[10] = helper;    
+    helper = state[6];
+    state[6] = state[14];
+    state[14] = helper;    
+
+    // last row
+    helper = state[3];
+    for (size_t i = 0; i < 3; i++)
+        state[3 + 4*i] = state[3 + 4*i + 4];
+    state[15] = helper;
 }
 
 uint8_t Mult[16][16] = {
@@ -74,7 +136,8 @@ uint8_t Mult[16][16] = {
     {0, 15, 13, 2,  9,  6,  4,  11, 1,  14, 12, 3,  8,  7,  5,  10},
 };
 
-void MixColumns(aes_state state, aes_state target) {
+aes_state MixColumns(aes_state state) {
+    aes_state target = create_aes_state();
     target[0]  = Mult[2][state[0]] ^ Mult[1][state[1]]  ^ Mult[1][state[2]]  ^ Mult[3][state[3]];
     target[1]  = Mult[3][state[0]] ^ Mult[2][state[1]]  ^ Mult[1][state[2]]  ^ Mult[1][state[3]];
     target[2]  = Mult[1][state[0]] ^ Mult[3][state[1]]  ^ Mult[2][state[2]]  ^ Mult[1][state[3]];
@@ -91,9 +154,11 @@ void MixColumns(aes_state state, aes_state target) {
     target[13] = Mult[3][state[12]]^ Mult[2][state[13]] ^ Mult[1][state[14]] ^ Mult[1][state[15]];
     target[14] = Mult[1][state[12]]^ Mult[3][state[13]] ^ Mult[2][state[14]] ^ Mult[1][state[15]];
     target[15] = Mult[1][state[12]]^ Mult[1][state[13]] ^ Mult[3][state[14]] ^ Mult[2][state[15]];
+    return target;
 }
 
-void MixColumnsInv(aes_state state, aes_state target) {
+aes_state MixColumnsInv(aes_state state) {
+    aes_state target = create_aes_state();
     target[0]  = Mult[14][state[0]]  ^ Mult[9][state[1]]   ^ Mult[13][state[2]]  ^ Mult[11][state[3]];
     target[1]  = Mult[11][state[0]]  ^ Mult[14][state[1]]  ^ Mult[9][state[2]]   ^ Mult[13][state[3]];
     target[2]  = Mult[13][state[0]]  ^ Mult[11][state[1]]  ^ Mult[14][state[2]]  ^ Mult[9][state[3]];
@@ -110,4 +175,42 @@ void MixColumnsInv(aes_state state, aes_state target) {
     target[13] = Mult[11][state[12]] ^ Mult[14][state[13]] ^ Mult[9][state[14]]  ^ Mult[13][state[15]];
     target[14] = Mult[13][state[12]] ^ Mult[11][state[13]] ^ Mult[14][state[14]] ^ Mult[9][state[15]];
     target[15] = Mult[9][state[12]]  ^ Mult[13][state[13]] ^ Mult[11][state[14]] ^ Mult[14][state[15]];
+    return target;
+}
+
+void AES_encrypt(aes_state state, aes_state target, aes_state* keys, size_t round_count) {
+    // r-round AES has r+1 keys
+    // c = (ARKₖᵣ ◦ F) ◦ (ARKₖᵣ₋₁ ◦ F) ◦ ... ◦ (ARKₖ₁ ◦ F) ◦ ARKₖ₀(m)
+    // F = MC ◦ SR ◦ SB
+
+    copy_aes_state(state, target);
+    AddRoundKey(target, keys[0]);
+
+    for (size_t i = 1; i <= round_count; i++)
+    {
+        // SubBytes(target);
+        // ShiftRows(target);
+        target = MixColumns(target);
+        // AddRoundKey(target, keys[i]);
+        printf("round_%ld: ", i);
+        print_aes_state(target);
+    }
+    
+    return;
+}
+
+void AES_decrypt(aes_state state, aes_state target, aes_state* keys, size_t round_count) {
+    copy_aes_state(state, target);
+
+    for (int i = round_count; i > 0 ; i--)
+    {
+        // AddRoundKey(target, keys[i]);
+        target = MixColumnsInv(target);
+        // ShiftRowsInv(target);
+        // SubBytes(target);  // is its own inverse
+        printf("round_%d: ", i);
+        print_aes_state(target);
+    }
+
+    AddRoundKey(target, keys[0]);
 }
