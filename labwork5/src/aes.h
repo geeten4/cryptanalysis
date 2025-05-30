@@ -2,12 +2,13 @@
 #define AES_H
 
 #include <stdint.h>
+#include "gf.h"
 
-typedef uint8_t* aes_state;
+typedef gf2_4* aes_state;
 
 
-void AES_encrypt(aes_state state, aes_state target, aes_state* keys, size_t round_count);
-void AES_decrypt(aes_state state, aes_state target, aes_state* keys, size_t round_count);
+aes_state AES_encrypt(aes_state state, aes_state* keys, size_t round_count);
+aes_state AES_decrypt(aes_state state, aes_state* keys, size_t round_count);
 aes_state random_aes_state();
 aes_state *generate_keys(size_t key_count);
 aes_state create_aes_state();
