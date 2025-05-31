@@ -50,12 +50,13 @@ void free_aes_state(aes_state state) {
     free(state);
 }
 
-void AddRoundKey(aes_state state, aes_state roundKey) {
+void add_to_state(aes_state add_to, aes_state to_be_added) {
     for (size_t i = 0; i < 16; i++)
-    {
-        state[i] ^= roundKey[i];
-    }
-    
+        add_to[i] ^= to_be_added[i];
+}
+
+void AddRoundKey(aes_state state, aes_state roundKey) {
+    add_to_state(state, roundKey);
 }
 
 void SubBytes(aes_state state) {

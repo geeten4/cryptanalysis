@@ -15,6 +15,7 @@ aes_state create_aes_state();
 void copy_aes_state(aes_state from, aes_state to);
 void print_aes_state(aes_state state);
 void free_aes_state(aes_state state);
+void add_to_state(aes_state add_to, aes_state to_be_added);
 void AddRoundKey(aes_state state, aes_state roundKey);
 void SubBytes(aes_state state);
 void ShiftRows(aes_state state);
