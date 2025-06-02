@@ -88,10 +88,8 @@ void secondExercise() {
         print_aes_state(keys[i]);
     }
 
-    aes_state random_state = random_aes_state(), helper = create_aes_state(), cipher;
-
     // first store all possible keys, then check which are valid
-    Set *possible_keys = create_set();
+    Set *possible_keys = create_set(), *keys_to_remove = create_set();
     aes_state plaintext, key_guess;
 
     // choose a random plaintext, from this create the structure
@@ -99,24 +97,50 @@ void secondExercise() {
     key_guess = random_aes_state();
 
     // iterate over 2^16 possibilities for the first column of the last key
-    // uint64_t key_nibble_limit = 1 << 16;
-    uint64_t key_nibble_limit = 1;
-    for (uint64_t key_nibbles = 0; key_nibbles < key_nibble_limit; key_nibbles++)
+    for (uint64_t key_nibbles = 0; key_nibbles < (1 << 16); key_nibbles++)
     {
-
         // initialize the last key guess 
         key_guess[0] = key_nibbles & 0xF;
         key_guess[5] = (key_nibbles >> 4) & 0xF;
         key_guess[10] = (key_nibbles >> 8) & 0xF;
         key_guess[15] = (key_nibbles >> 12) & 0xF;
-        key_guess = keys[0];
 
         if (check_all_zero_charac(plaintext, key_guess, keys, round_count)) {
-            set_add(possible_keys, (set_arg_t) ((key_guess[3] << 12)) ^ (key_guess[2] << 8) ^ (key_guess[1] << 4) ^ key_guess[0]);
+            set_add(possible_keys, (set_arg_t) ((key_guess[15] << 12)) ^ (key_guess[10] << 8) ^ (key_guess[5] << 4) ^ key_guess[0]);
         }
     }
 
-    set_print(possible_keys);
+    while (possible_keys->size > 1)
+    {
+        plaintext = random_aes_state();
+        for (size_t i = 0; i < possible_keys->size; i++)
+        {   
+            key_guess[0] = possible_keys->data[i] & 0xF;
+            key_guess[5] = (possible_keys->data[i] >> 4) & 0xF;
+            key_guess[10] = (possible_keys->data[i] >> 8) & 0xF;
+            key_guess[15] = (possible_keys->data[i] >> 12) & 0xF;
+
+            if (!check_all_zero_charac(plaintext, key_guess, keys, round_count)) {
+                set_add(keys_to_remove, (set_arg_t) ((key_guess[15] << 12)) ^ (key_guess[10] << 8) ^ (key_guess[5] << 4) ^ key_guess[0]);
+            }
+        }
+        set_subtract(possible_keys, keys_to_remove);
+    }
+
+    for (size_t i = 0; i < possible_keys->size; i++)
+    {
+        printf(
+            "Last possible key nibbles: k_0[0]: %d, k_0[5]: %d, k_0[10]: %d, k_0[15]: %d\n",
+            possible_keys->data[i]& 0xF,
+            (possible_keys->data[i] >> 4) & 0xF,
+            (possible_keys->data[i] >> 8) & 0xF,
+            (possible_keys->data[i] >> 12) & 0xF
+        );
+    }
+}
+
+void combinedAttack() {
+
 }
 
 int main() {
@@ -125,6 +149,8 @@ int main() {
     // firstExercise();
     
     secondExercise();
+
+    combinedAttack();
 
     // size_t round_count = 5;
     // size_t key_count = round_count + 1;
