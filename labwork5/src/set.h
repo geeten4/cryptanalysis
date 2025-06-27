@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-typedef uint16_t set_arg_t;
+typedef uint32_t set_arg_t;
 
 typedef struct {
     set_arg_t *data;
