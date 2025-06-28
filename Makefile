@@ -109,7 +109,38 @@ $(BUILD_DIR5)/%.o: $(SRC_DIR5)/%.c
 	$(CC) $(CFLAGS5) -c $< -o $@
 
 
+
+# ------ LABWORK FINAL
+
+
+# directories
+SRC_DIR_final := labwork_final/src
+CFLAGS_final := -Wall -I$(SRC_DIR_final)
+BUILD_DIR_final := bin/labwork_final
+
+# files
+SRCS_final := $(wildcard $(SRC_DIR_final)/*.c)
+OBJS_final := $(patsubst $(SRC_DIR_final)/%.c, $(BUILD_DIR_final)/%.o, $(SRCS_final))
+
+# target
+TARGET_final := $(BUILD_DIR_final)/labwork_final
+
+# default target
+.PHONY: labwork_final
+labwork_final: $(TARGET_final)
+
+# link the final binary
+$(TARGET_final): $(OBJS_final)
+	$(CC) $(OBJS_final) -o $@ -lm
+
+# compile source files to object files
+$(BUILD_DIR_final)/%.o: $(SRC_DIR_final)/%.c
+	@mkdir -p $(BUILD_DIR_final)
+	$(CC) $(CFLAGS_final) -c $< -o $@
+
+
+
 # cleaning
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR3)/*.o $(BUILD_DIR3)/*.so $(TARGET3) $(BUILD_DIR4)/*.o $(TARGET4) $(BUILD_DIR5)/*.o $(TARGET5)
+	rm -rf $(BUILD_DIR3)/*.o $(BUILD_DIR3)/*.so $(TARGET3) $(BUILD_DIR4)/*.o $(TARGET4) $(BUILD_DIR5)/*.o $(TARGET5) $(BUILD_DIR_FINAL)/*.o $(TARGET_FINAL)
