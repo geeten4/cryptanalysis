@@ -1,39 +1,46 @@
-#ifndef BINDEX_H
-#define BINDEX_H
+#ifndef VECTOR_H
+#define VECTOR_H
 
-#include <stddef.h>
-#include "factor_basis.h"
+#include <stdint.h>
+#include <stdio.h>
 #include "gf.h"
 
-typedef struct VectorNode
-{
-    fb_t value;
-    int index;
-    struct VectorNode* left;
-    struct VectorNode* right;
-} VectorNode;
+#define INIT_CAPACITY 10;
 
-typedef struct
-{
-    VectorNode *head;
+typedef struct {
+    int index;
+    gf_t value;
+} Entry;
+
+typedef struct {
+    Entry* entries;
+    int size;     
+    int capacity; 
+    int length;   
 } Vector;
 
+// basic 
+Vector* vector_create(int length);
+void vector_set(Vector* vec, int index, gf_t value);
+gf_t vector_get(const Vector* vec, int index);
+void vector_increment(Vector* vec, int index);
+void vector_free(Vector* vec);
+void vector_print(const Vector* vec);
 
-// basic vector manipulation
-void Vector_init(Vector *v);
-void Vectore_free(Vector *v);
-void Vector_print(Vector *v);
-int Vector_insert_value(Vector *v, int index, fb_t value);
-fb_t Vector_get_value(Vector *v, int index);
-void Vector_increment(Vector *v, int index);
-int Vector_next_nonzero_index(Vector *v, int index);
+// linear operations
+void vector_scale(Vector* vec, gf_t scalar, gf_t p);
+void vector_add_scaled(Vector* vec, const Vector* other, gf_t scalar, gf_t p);
+
+// factor basis operations
+gf_t vector_express_in_fbasis(Vector* vec, BasisList* fb, gf_t n);
+gf_t vector_multiply_in_fbasis(Vector* vec, BasisList* fb);
+
+#endif // VECTOR_H
 
 // factor basis
-fb_t Vector_express_in_fbasis(Vector *v, BasisList *fb, fb_t n);
-fb_t Vector_multiply_with_fbasis(Vector *v, BasisList *fb);
+// fb_t Vector_express_in_fbasis(Vector *v, BasisList *fb, fb_t n);
+// fb_t Vector_multiply_with_fbasis(Vector *v, BasisList *fb);
 
 // linear manipulation
-void Vector_scale(Vector *v, fb_t c, gf_t p);  // multiply v by c modulo p
-void Vector_add_vector_multiple(Vector *v, fb_t c, Vector *w, gf_t p);  // to v add c*w modulo p
-
-#endif  // BINDEX_H
+// void Vector_scale(Vector *v, fb_t c, gf_t p);  // multiply v by c modulo p
+// void Vector_add_vector_multiple(Vector *v, fb_t c, Vector *w, gf_t p);  // to v add c*w modulo p

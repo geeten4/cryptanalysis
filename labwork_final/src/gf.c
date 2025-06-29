@@ -34,3 +34,7 @@ int mod_pow(gf_t base, gf_t exp, gf_t p) {
     }
     return result;
 }
+
+gf_t mod_opp(gf_t a, gf_t p) {
+    return p - (a % p);
+}
