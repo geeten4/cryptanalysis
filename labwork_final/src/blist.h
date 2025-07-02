@@ -16,8 +16,10 @@ typedef struct {
     size_t capacity;
 } BasisList;
 
+BasisList* BasisList_create(size_t initial_capacity);
 void BasisList_init(BasisList *list, size_t initial_capacity);
 void BasisList_append(BasisList *list, fb_t value);
+fb_t BasisList_pop(BasisList* list);
 fb_t BasisList_get(BasisList *list, size_t index);
 void BasisList_free(BasisList *list);
 void BasisList_print(BasisList *list);
