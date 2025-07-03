@@ -86,7 +86,7 @@ gf_t solve_dl(gf_t alpha, gf_t beta, gf_t q, int fb_limit, bool verbose) {
         printf("q=%d, alpha=%d, beta=%d\n", q, alpha, beta);
     }
 
-    int rows = 40, cols = 7;
+    int rows = 40, cols = fb->size + 1;
     Matrix* A = matrix_create(rows, cols);
 
     matrix_add_random_vectors_in_fbasis(A, fb, rows, cols, alpha, q, verbose);
@@ -136,7 +136,7 @@ bool is_generator(gf_t g, gf_t p) {
 int main() {
     srand(time(NULL)); // Seed using current time
 
-    fb_t fb_limit = 14;
+    fb_t fb_limit = 100;
     
 
     // gf_t q = 14087, alpha = 5, beta = 5872;  // numbers from Table 4
@@ -144,11 +144,12 @@ int main() {
     // gf_t q = 19087, alpha = 37, beta = 5872;  // 19087 is a product of three distinct primes, 37 is a generator
     // gf_t q = 18061, alpha = 6, beta = 5872;  // 18060 = 2^2 * 3 * 5 * 7 * 43
     gf_t q = 870871, alpha = 11, beta = 5872;  // 870870 = 2 * 3 * 5 * 7 * 11 * 13 * 29
+    q = 23250037;
     // 831867923631411555738439410809
 
     printf("is_generator(alpha, q): %d\n", is_generator(alpha, q));
 
-    gf_t dl = solve_dl(alpha, beta, q, fb_limit, false);
+    gf_t dl = solve_dl(alpha, beta, q, fb_limit, true);
 
     printf("dl: %d\n, mod_pow(alpha, discrete_log, q) == beta: %d\n", dl, mod_pow(alpha, dl, q) == beta);
 

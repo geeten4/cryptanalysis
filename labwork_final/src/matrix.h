@@ -16,7 +16,7 @@ Matrix* matrix_create(int initial_rows, int cols);
 Matrix* matrix_copy(Matrix* mat);
 gf_t matrix_get(const Matrix* mat, int row, int col);
 void matrix_set(Matrix* mat, int row, int col, gf_t value);
-void matrix_set_row_vector(Matrix* mat, int row, Vector* vec);
+void matrix_set_row_vector(Matrix* mat, int row, const Vector* vec);
 void matrix_print(const Matrix* mat);
 void matrix_free(Matrix* mat);
 

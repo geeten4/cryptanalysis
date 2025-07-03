@@ -29,11 +29,12 @@ Matrix* matrix_copy(Matrix* mat) {
     return out;
 }
 
-void matrix_set_row_vector(Matrix* mat, int row, Vector* vec) {
+void matrix_set_row_vector(Matrix* mat, int row, const Vector* vec) {
     if (row >= mat->row_count) return;
 
-    for (size_t i = 0; i < vec->size; i++)
-        vector_set(mat->rows[row], vec->entries[i].index, vec->entries[i].value);
+    for (size_t i = 0; i < vec->length; i++) {
+        matrix_set(mat, row, i, vector_get(vec, i));
+    }
 }
 
 void matrix_ensure_row(Matrix* mat, int row) {
