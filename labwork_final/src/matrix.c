@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "matrix.h"
@@ -94,6 +95,8 @@ void matrix_gaussian_elimination(Matrix* mat, gf_t p) {
     int cols = mat->col_count;
     int pivot_row = 0;
 
+    matrix_mod(mat, p);
+
     for (int col = 0; col < cols && pivot_row < rows; ++col) {
         // find pivot
         int best_row = -1;
@@ -135,7 +138,7 @@ void matrix_gaussian_elimination(Matrix* mat, gf_t p) {
 }
 
 // Returns 1 if solution exists, and fills `solution` vector (size = col_count - 1)
-// Returns 0 if no solution exists
+// Returns 0 if no solution; exists
 int matrix_get_solution(Matrix* mat, Vector* solution, gf_t p) {
     int rows = mat->row_count;
     int cols = mat->col_count; // includes RHS column
@@ -217,4 +220,29 @@ void matrix_vector_mul(const Matrix* A, const Vector* v, Vector* result, gf_t p)
             }
         }
     }
+}
+
+void matrix_mod(const Matrix* mat, gf_t p) {
+    for (size_t i = 0; i < mat->row_count; i++)
+        vector_mod(mat->rows[i], p);
+}
+
+Matrix* matrix_remove_zero_rows(Matrix* mat) {
+    // assuming Matrix mat is in RREF, create new matrix with only non-zero rows
+    size_t i = 0;
+    while (true) {
+        // vector_check_for_zeroes(mat->rows[i]);
+        if (mat->rows[i]->size == 0) break;
+        i++;
+    };
+
+    if (i == 0) {
+        printf("Creating empty matrix, abort.");
+        return 0;
+    }
+
+    mat->row_count=i;
+    Matrix* out = matrix_copy(mat);
+    free(mat);
+    return out;
 }

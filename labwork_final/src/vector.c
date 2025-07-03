@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <assert.h>
 #include <stdlib.h>
 #include "vector.h"
@@ -101,9 +102,12 @@ void vector_free(Vector* vec) {
 }
 
 void vector_print(const Vector* vec) {
+    printf("(");
     for (int i = 0; i < vec->size; ++i) {
-        printf("  [%d] = %d\n", vec->entries[i].index, vec->entries[i].value);
+        printf("[%d] = %d", vec->entries[i].index, vec->entries[i].value);
+        if (i < vec->size - 1) printf(", ");
     }
+    printf(")\n");
 }
 
 void vector_print_with_zeros(const Vector* vec) {
@@ -160,68 +164,92 @@ gf_t vector_multiply_in_fbasis(Vector* vec, BasisList* fb) {
     return n;
 }
 
-gf_t* extended_euclidian_algorithm(gf_t a, gf_t b) {
-    // computes x, y s.t. ax + by = gcd(a, b)
-    gf_t x = 1, y = 0, z = 0, w = 1;
-    gf_t c;
-    while (b != 0) {
-        int k = (int) a / b;
-        a -= k*b;
-        x -= k*z;
-        y -= k*w;
+gf_t* extended_euclidean_algorithm(gf_t a, gf_t b) {
+    gf_t s0 = 1, s1 = 0;
+    gf_t t0 = 0, t1 = 1;
+    gf_t r0 = a, r1 = b;
 
-        c = b;
-        b = a;
-        a = c;
-        c = x;
-        x = z;
-        z = c;
-        c = y;
-        y = w;
-        w = c;
+    while (r1 != 0) {
+        gf_t q = r0 / r1;
+
+        gf_t r_temp = r0 - q * r1;
+        r0 = r1;
+        r1 = r_temp;
+
+        gf_t s_temp = s0 - q * s1;
+        s0 = s1;
+        s1 = s_temp;
+
+        gf_t t_temp = t0 - q * t1;
+        t0 = t1;
+        t1 = t_temp;
     }
 
-    gf_t* out = malloc(sizeof(gf_t) * 2);
-    out[0] = x;
-    out[1] = y;
-    return out;
+    gf_t* result = malloc(3 * sizeof(gf_t));
+    result[0] = r0;  // gcd(a, b)
+    result[1] = s0;  // x such that a*x + b*y = gcd
+    result[2] = t0;  // y such that a*x + b*y = gcd
+    return result;
 }
 
 void crt_combine_vectors(Vector** vectors, BasisList* moduli, int n, Vector* v) {
-    // Compute product m = a_1 * ... * a_n
-    gf_t m = 1;
-    for (int i = 0; i < n; ++i)
-        m *= BasisList_get(moduli, i);
-
     int vector_dim = vectors[0]->length;
-    Vector* helper = vector_create(vector_dim);
 
-    // solve the first two
-    for (size_t i = 0; i < vector_dim; i++)
-    {
-        if (n > 2)
-            crt_combine_vectors(vectors, moduli, n - 1, helper);
-        else
-            helper = vectors[n - 2];
+    for (int i = 0; i < vector_dim; i++) {
+        gf_t x = 0;
+        gf_t M = 1;
 
-        // if (vector_get(helper, i) == 0 && vector_get(vectors[n - 1], i) == 0)
-        //     continue;
+        // Compute the total modulus M = m1 * m2 * ... * mn
+        for (int j = 0; j < n; j++) {
+            M *= BasisList_get(moduli, j);
+        }
 
-        // printf("helper: ");
-        // vector_print_with_zeros(helper);
-        // printf("vectors[n-1]: ");
-        // vector_print_with_zeros(vectors[n-1]);
-        // printf("\n");
+        for (int j = 0; j < n; j++) {
+            gf_t mj = BasisList_get(moduli, j);
+            gf_t aj = vector_get(vectors[j], i);
 
-        gf_t n_1 = BasisList_get(moduli, n-1), n_2 = BasisList_get(moduli, n-2);
-        gf_t* eea_coeffs = extended_euclidian_algorithm(n_1, n_2);
-        gf_t m_1 = eea_coeffs[0], m_2 = eea_coeffs[1];
-        gf_t a_1 = vector_get(vectors[n-1], i);
-        gf_t a_2 = vector_get(helper, i);
-        gf_t x = a_1 * m_2 * n_2 + a_2 * m_1 * n_1;
-        x %= n_1 * n_2;
-        if (x < 0) x += n_1 * n_2;
+            gf_t Mj = M / mj;
+
+            // Extended Euclidean Algorithm to compute inverse of Mj mod mj
+            gf_t* eea_result = extended_euclidean_algorithm(Mj, mj);
+            gf_t inv = eea_result[1];  // inverse of Mj mod mj
+
+            // Make sure the inverse is positive
+            inv = (inv % mj + mj) % mj;
+
+            free(eea_result);
+
+            x += aj * Mj * inv;
+        }
+
+        x %= M;
+        if (x < 0) x += M;
 
         vector_set(v, i, x);
     }
 }
+
+void vector_mod(Vector* vec, gf_t p) {
+    for (size_t i = 0; i < vec->length; i++)
+        vector_set(vec, i, vector_get(vec, i) % p);
+}
+
+// bool vector_is_zero(Vector* vec) {
+//     if (vec->size == 0)
+// }
+
+// bool vector_has_zero_entries(Vector* vec) {
+//     // due to errors, vector can have zero entries in vec->entries
+//     // delete the zeroes
+    
+//     // TODO: find out why and when this happens
+//     for (size_t i = 0; i < vec->size; i++)
+//     {
+//         if (vec->entries[i].value == 0) {
+//             // printf("ZERO VALUES!!!!\n");
+//             return true;
+//             vector_set(vec, i, 0);
+//         }
+//     }
+//     return false;
+// }
