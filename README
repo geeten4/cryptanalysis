@@ -41,3 +41,21 @@ python3 ./labwork3/python/gen_message_ciphertext_pairs.py
 ```
 
 it stores the pairs in `/labwork3/data/message_ciphertext.csv`
+
+# Final homework
+
+run tests: compile to shared object using
+
+```bash
+
+make dl
+
+```
+
+which creates a dl.so shared object file in bin. This is used to run python tests. Run them via
+
+```bash
+
+python3 labwork_final/python/tests.py
+
+```

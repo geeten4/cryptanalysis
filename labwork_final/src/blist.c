@@ -38,6 +38,14 @@ fb_t BasisList_pop(BasisList* list) {
     return list->data[list->size];
 }
 
+void BasisList_set(BasisList *list, size_t index, fb_t value) {
+    if (index >= list->size) {
+        fprintf(stderr, "Index out of bounds\n");
+        exit(EXIT_FAILURE);
+    }
+    list->data[index] = value;
+}
+
 fb_t BasisList_get(BasisList *list, size_t index) {
     if (index >= list->size) {
         fprintf(stderr, "Index out of bounds\n");

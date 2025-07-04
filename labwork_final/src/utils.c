@@ -29,3 +29,29 @@ void factor(BasisList* bl, gf_t n) {
     // If remaining n is prime and > 2
     if (n > 2) BasisList_append(bl, n);
 }
+
+BasisList* multiply_same_factors(BasisList* bl) {
+    // given a list of factors of some integer n,
+    // factors of higher multiplicties are listed separately,
+    // multiply these factors together
+    BasisList* out = BasisList_create(10);
+    for (size_t i = 0; i < bl->size; i++)
+    {
+        fb_t new_factor = BasisList_get(bl, i);
+
+        if (out->size == 0) {
+            BasisList_append(out, new_factor);
+            continue;
+        }
+
+        fb_t last_factor = BasisList_get(out, out->size - 1);
+        if (last_factor % new_factor == 0) {
+            BasisList_set(out, out->size - 1, last_factor * new_factor);
+            continue;
+        } else {
+            BasisList_append(out, new_factor);
+        }
+    }
+
+    return out;
+}

@@ -138,9 +138,27 @@ $(BUILD_DIR_final)/%.o: $(SRC_DIR_final)/%.c
 	@mkdir -p $(BUILD_DIR_final)
 	$(CC) $(CFLAGS_final) -c $< -o $@
 
+# shared dl.c for python scripts
+DL_TARGET := $(BUILD_DIR_final)/dl.so
+DL_SRCS := $(SRC_DIR_final)/dl.c $(SRC_DIR_final)/factor_basis.c $(SRC_DIR_final)/blist.c $(SRC_DIR_final)/gf.c $(SRC_DIR_final)/vector.c $(SRC_DIR_final)/matrix.c $(SRC_DIR_final)/utils.c
+DL_OBJS := $(patsubst $(SRC_DIR_final)%.c, $(BUILD_DIR_final)%_shared.o, $(DL_SRCS))
+
+# generate shared library of dl functions for python
+
+.PHONY: dl
+dl: dl.so
+
+dl.so: $(DL_TARGET)
+
+$(DL_TARGET): $(DL_OBJS)
+	$(CC) $(LDFLAGS_SHARED) -o $@ $^
+
+$(BUILD_DIR_final)/%_shared.o: $(SRC_DIR_final)/%.c
+	$(CC) $(CFLAGS_SHARED) -c $< -o $@
+
 
 
 # cleaning
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR3)/*.o $(BUILD_DIR3)/*.so $(TARGET3) $(BUILD_DIR4)/*.o $(TARGET4) $(BUILD_DIR5)/*.o $(TARGET5) $(BUILD_DIR_FINAL)/*.o $(TARGET_FINAL)
+	rm -rf $(BUILD_DIR3)/*.o $(BUILD_DIR3)/*.so $(TARGET3) $(BUILD_DIR4)/*.o $(TARGET4) $(BUILD_DIR5)/*.o $(TARGET5) $(BUILD_DIR_FINAL)/*.o $(TARGET_FINAL) $(DL_TARGET)

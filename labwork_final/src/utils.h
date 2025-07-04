@@ -5,5 +5,6 @@
 #include "blist.h"
 
 void factor(BasisList* bl, gf_t n);
+BasisList* multiply_same_factors(BasisList* bl);
 
 #endif
