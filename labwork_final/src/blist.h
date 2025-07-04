@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stddef.h>
 
-typedef uint32_t fb_t;
+typedef uint64_t fb_t;
 
 typedef struct {
     fb_t *data;

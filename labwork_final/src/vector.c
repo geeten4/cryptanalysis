@@ -164,6 +164,39 @@ gf_t vector_multiply_in_fbasis(Vector* vec, BasisList* fb) {
     return n;
 }
 
+static inline gf_t mod(gf_t a, gf_t m) {
+    gf_t r = a % m;
+    return r < 0 ? r + m : r;
+}
+
+// gf_t* extended_euclidean_algorithm(gf_t a, gf_t b) {
+//     gf_t s0 = 1, s1 = 0;
+//     gf_t t0 = 0, t1 = 1;
+//     gf_t r0 = a, r1 = b;
+
+//     while (r1 != 0) {
+//         gf_t q = r0 / r1;
+
+//         gf_t r_temp = r0 - q * r1;
+//         r0 = r1;
+//         r1 = r_temp;
+
+//         gf_t s_temp = s0 - q * s1;
+//         s0 = s1;
+//         s1 = s_temp;
+
+//         gf_t t_temp = t0 - q * t1;
+//         t0 = t1;
+//         t1 = t_temp;
+//     }
+
+//     gf_t* result = malloc(3 * sizeof(gf_t));
+//     result[0] = r0;  // gcd(a, b)
+//     result[1] = s0;  // x such that a*x + b*y = gcd
+//     result[2] = t0;  // y such that a*x + b*y = gcd
+//     return result;
+// }
+
 gf_t* extended_euclidean_algorithm(gf_t a, gf_t b) {
     gf_t s0 = 1, s1 = 0;
     gf_t t0 = 0, t1 = 1;
@@ -192,40 +225,120 @@ gf_t* extended_euclidean_algorithm(gf_t a, gf_t b) {
     return result;
 }
 
-void crt_combine_vectors(Vector** vectors, BasisList* moduli, int n, Vector* v) {
-    int vector_dim = vectors[0]->length;
+// void crt_combine_vectors(Vector** vectors, BasisList* moduli, int n, Vector* v) {
+//     int vector_dim = vectors[0]->length;
 
-    for (int i = 0; i < vector_dim; i++) {
-        gf_t x = 0;
-        gf_t M = 1;
+//     for (int i = 0; i < vector_dim; i++) {
+//         gf_t x = 0;
+//         gf_t M = 1;
 
-        // Compute the total modulus M = m1 * m2 * ... * mn
-        for (int j = 0; j < n; j++) {
-            M *= BasisList_get(moduli, j);
+//         // Compute the total modulus M = m1 * m2 * ... * mn
+//         for (int j = 0; j < n; j++) {
+//             M *= BasisList_get(moduli, j);
+//         }
+
+//         for (int j = 0; j < n; j++) {
+//             gf_t mj = BasisList_get(moduli, j);
+//             gf_t aj = vector_get(vectors[j], i);
+
+//             gf_t Mj = M / mj;
+
+//             // Extended Euclidean Algorithm to compute inverse of Mj mod mj
+//             gf_t* eea_result = extended_euclidean_algorithm(Mj, mj);
+//             gf_t inv = eea_result[1];  // inverse of Mj mod mj
+
+//             // Make sure the inverse is positive
+//             inv = (inv % mj + mj) % mj;
+
+//             free(eea_result);
+
+//             x += aj * Mj * inv;
+//         }
+
+//         x %= M;
+//         if (x < 0) x += M;
+
+//         vector_set(v, i, x);
+//     }
+// }
+
+// void crt_combine_vectors(Vector** vectors, BasisList* moduli, int n, Vector* result) {
+//     int dim = vectors[0]->length;
+
+//     for (int i = 0; i < dim; i++) {
+//         gf_t x = vector_get(vectors[0], i);  // Initial remainder
+//         gf_t M = BasisList_get(moduli, 0);   // Initial modulus
+
+//         for (int k = 1; k < n; k++) {
+//             gf_t mk = BasisList_get(moduli, k);
+//             gf_t ak = vector_get(vectors[k], i);
+
+//             gf_t x_mod_mk = x % mk;
+//             if (x_mod_mk < 0) x_mod_mk += mk;
+
+//             gf_t delta = (ak - x_mod_mk) % mk;
+//             if (delta < 0) delta += mk;
+
+//             // Compute M^{-1} mod mk
+//             gf_t* eea = extended_euclidean_algorithm(M, mk);
+//             gf_t M_inv = eea[1];  // M^{-1} mod mk
+//             free(eea);
+//             M_inv = (M_inv % mk + mk) % mk;
+
+//             gf_t correction = (delta * M_inv) % mk;
+//             x = x + correction * M;
+//             M *= mk;
+//         }
+
+//         x = x % M;
+//         if (x < 0) x += M;
+
+//         vector_set(result, i, x);
+//     }
+// }
+
+void crt_combine_vectors(Vector** vectors, BasisList* moduli, int n, Vector* result) {
+    int dim = vectors[0]->length;
+
+    for (int i = 0; i < dim; i++) {
+        gf_t x = mod(vector_get(vectors[0], i), BasisList_get(moduli, 0));  // initial remainder
+        gf_t M = BasisList_get(moduli, 0);  // initial modulus
+
+        for (int k = 1; k < n; k++) {
+            gf_t mk = BasisList_get(moduli, k);
+            gf_t ak = mod(vector_get(vectors[k], i), mk);
+
+            gf_t x_mod_mk = mod(x, mk);
+
+            gf_t delta = mod(ak - x_mod_mk, mk);
+
+            // Compute gcd and modular inverse of M mod mk
+            gf_t* eea = extended_euclidean_algorithm(M, mk);
+            gf_t gcd = eea[0];
+            gf_t M_inv = eea[1];
+            free(eea);
+
+            if (gcd != 1) {
+                // moduli not coprime; CRT invalid
+                fprintf(stderr, "Error: moduli %lld and %lld are not coprime (gcd = %lld)\n", M, mk, gcd);
+                // Handle error appropriately here (e.g., abort or skip)
+                return;
+            }
+
+            M_inv = mod(M_inv, mk);  // positive inverse mod mk
+
+            gf_t correction = mod(delta * M_inv, mk);
+
+            // Carefully multiply to avoid overflow:
+            // If gf_t is 64-bit, use 128-bit or check bounds before multiply
+            x = x + correction * M;
+
+            // Update combined modulus
+            M = M * mk;
         }
 
-        for (int j = 0; j < n; j++) {
-            gf_t mj = BasisList_get(moduli, j);
-            gf_t aj = vector_get(vectors[j], i);
-
-            gf_t Mj = M / mj;
-
-            // Extended Euclidean Algorithm to compute inverse of Mj mod mj
-            gf_t* eea_result = extended_euclidean_algorithm(Mj, mj);
-            gf_t inv = eea_result[1];  // inverse of Mj mod mj
-
-            // Make sure the inverse is positive
-            inv = (inv % mj + mj) % mj;
-
-            free(eea_result);
-
-            x += aj * Mj * inv;
-        }
-
-        x %= M;
-        if (x < 0) x += M;
-
-        vector_set(v, i, x);
+        x = mod(x, M);
+        vector_set(result, i, x);
     }
 }
 

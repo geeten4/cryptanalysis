@@ -1,6 +1,60 @@
 # static
 CC := gcc
 
+# ------ LABWORK 1
+
+# directories
+SRC_DIR1 := labwork1/src
+CFLAGS1 := -Wall -I$(SRC_DIR1)
+BUILD_DIR1 := bin/labwork1
+
+# files
+SRCS1 := $(wildcard $(SRC_DIR1)/*.c)
+OBJS1 := $(patsubst $(SRC_DIR1)/%.c, $(BUILD_DIR1)/%.o, $(SRCS1))
+
+# target
+TARGET1 := $(BUILD_DIR1)/labwork1
+
+# default target
+.PHONY: labwork1
+labwork1: $(TARGET1)
+
+# link the final binary
+$(TARGET1): $(OBJS1)
+	$(CC) $(OBJS1) -o $@
+
+# compile source files to object files
+$(BUILD_DIR1)/%.o: $(SRC_DIR1)/%.c
+	@mkdir -p $(BUILD_DIR1)
+	$(CC) $(CFLAGS1) -c $< -o $@
+
+# ------ LABWORK 2
+
+# directories
+SRC_DIR2 := labwork2/src
+CFLAGS2 := -Wall -I$(SRC_DIR2)
+BUILD_DIR2 := bin/labwork2
+
+# files
+SRCS2 := $(wildcard $(SRC_DIR2)/*.c)
+OBJS2 := $(patsubst $(SRC_DIR2)/%.c, $(BUILD_DIR2)/%.o, $(SRCS2))
+
+# target
+TARGET2 := $(BUILD_DIR2)/labwork2
+
+# default target
+.PHONY: labwork2
+labwork2: $(TARGET2)
+
+# link the final binary
+$(TARGET2): $(OBJS2)
+	$(CC) $(OBJS2) -o $@
+
+# compile source files to object files
+$(BUILD_DIR2)/%.o: $(SRC_DIR2)/%.c
+	@mkdir -p $(BUILD_DIR2)
+	$(CC) $(CFLAGS2) -c $< -o $@
+
 # ------ LABWORK 3
 
 # directories

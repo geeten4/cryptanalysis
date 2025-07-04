@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stddef.h>
-
 #include "feistel.h"
 #include "gf.h"
 #include "permutation.h"
@@ -17,9 +16,6 @@ double_gf2_11 Feistel_encrypt(double_gf2_11 message, gf2_11 *keys, size_t roundC
     gf2_11 left = double_left(message), right = double_right(message), helper;
     for (size_t i = 0; i < roundCount; i++)
     {
-        // printf("round%ld: ", i);
-        // print_double_gf2_11_bytes(create_double(left, right));
-        // printf("\n");
         helper = right;
         right = left ^ roundFunction(right, keys[i]);
         left = helper;
@@ -27,9 +23,7 @@ double_gf2_11 Feistel_encrypt(double_gf2_11 message, gf2_11 *keys, size_t roundC
 
     assert(left < (1 << 11));
     assert(right < (1 << 11));
-    // printf("returning: ");
-    // print_double_gf2_11_bytes(create_double(left, right));
-    // printf("\n");
+
     return create_double(left, right);
 }
 

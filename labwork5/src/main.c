@@ -8,9 +8,10 @@
 #include "data.h"
 #include "set.h"
 #include "characteristic.h"
+#include <stdbool.h>
 
 
-void firstExercise() {
+void firstExercise(bool verbose) {
     // guesses the first column of the last key
 
     size_t round_count = 4;
@@ -50,7 +51,9 @@ void firstExercise() {
     Set *keys_to_remove = create_set();
     
     while (possible_keys->size > 1) {
-        printf("possible_keys->size: %d\n", possible_keys->size);
+        if (verbose)
+            printf("possible_keys->size: %d\n", possible_keys->size);
+
         for (size_t i = 0; i < possible_keys->size; i++)
         {
             plaintext = random_aes_state();
@@ -63,8 +66,10 @@ void firstExercise() {
             if (!check_diagonal_zero(plaintext, key_guess, keys, round_count))
                 set_add(keys_to_remove, possible_keys->data[i]);
 
-            printf("key_guess[0]: %d, key_guess[1]: %d, key_guess[2]: %d, key_guess[3]: %d\n", key_guess[0], key_guess[1], key_guess[2], key_guess[3]);
+            if (verbose)
+                printf("key_guess[0]: %d, key_guess[1]: %d, key_guess[2]: %d, key_guess[3]: %d\n", key_guess[0], key_guess[1], key_guess[2], key_guess[3]);
         }
+
         if (possible_keys->size == 2) {
             set_print(possible_keys);
             // return;
@@ -199,10 +204,12 @@ int main() {
     */
 
     srand(time(NULL));   // Initialization, should only be called once.
+
+    printf("First exercise: \n");
+    firstExercise(false);
     
-    firstExercise();
-    
-    // secondExercise();
+    printf("\nSecond exercise: \n");
+    secondExercise();
 
     // combinedAttack();
 

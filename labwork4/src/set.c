@@ -51,15 +51,14 @@ void set_remove(Set *set, gf2_11 x) {
 
 void set_print(Set *set) {
     printf("{ ");
-    for (int i = 0; i < set->size; i++) {
+
+    for (int i = 0; i < set->size; i++)
         printf("%d, ", set->data[i]);
-    }
+
     printf("}\n");
 }
 
 void set_subtract(Set *set1, Set *set2) {
     for (size_t i = 0; i < set2->size; i++)
-    {
         set_remove(set1, set2->data[i]);
-    }
 }

@@ -83,7 +83,9 @@ void secondExercise() {
         printf("Remaining possible key count: %d\n", possible_keys->size);
     }
     
-    printf("Last remaining possible key is %d, key_5 is %d\n", possible_keys->data[0], keys[roundCount - 1]);
+    printf("Last remaining candidate for k_5 is: ");
+    print_gf2_11_bytes(possible_keys->data[0]);
+    printf("\n");
 }
 
 void firstExercise() {
@@ -144,8 +146,9 @@ void firstExercise() {
 int main() {
     srand(time(NULL));   // Initialization, should only be called once.
 
-    // secondExercise();
-
+    printf("First exercise: \n");
     firstExercise();
 
+    printf("\nSecond exercise: \n");
+    secondExercise();
 }

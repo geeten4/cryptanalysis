@@ -78,15 +78,14 @@ void keypair_set_remove(KeyPairSet *set, KeyPair *kp) {
 
 void keypair_set_print(KeyPairSet *set) {
     printf("{ \n");
-    for (int i = 0; i < set->size; i++) {
+
+    for (int i = 0; i < set->size; i++)
         print_keypair(set->data[i]);
-    }
+
     printf("\n}\n");
 }
 
 void keypair_set_subtract(KeyPairSet *set1, KeyPairSet *set2) {
     for (size_t i = 0; i < set2->size; i++)
-    {
         keypair_set_remove(set1, set2->data[i]);
-    }
 }

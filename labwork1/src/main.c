@@ -5,78 +5,76 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 
 // S substitution
-unsigned int S[] = {0x6, 0x4, 0xc, 0x5, 0x0, 0x7, 0x2, 0xe, 0x1, 0xf, 0x3, 0xd, 0x8, 0xa, 0x9, 0xb};
+uint16_t S[] = {0x6, 0x4, 0xc, 0x5, 0x0, 0x7, 0x2, 0xe, 0x1, 0xf, 0x3, 0xd, 0x8, 0xa, 0x9, 0xb};
 //                  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   a,   b,   c,   d,   e,   f
 // S inverse
-unsigned int invS[] = {0x4, 0x8, 0x6, 0xa, 0x1, 0x3, 0x0, 0x5, 0xc, 0xe, 0xd, 0xf, 0x2, 0xb, 0x7, 0x9};
+uint16_t invS[] = {0x4, 0x8, 0x6, 0xa, 0x1, 0x3, 0x0, 0x5, 0xc, 0xe, 0xd, 0xf, 0x2, 0xb, 0x7, 0x9};
 
 // P permutation
-unsigned int P[] = {0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15};
+uint16_t P[] = {0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15};
 //                  0, 1, 2, 3,  4, 5, 6, 7,  8, 9, 10, 11, 12,13,14, 15
 // P inverse
-unsigned int invP[] = {0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15};
+uint16_t invP[] = {0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15};
 
 
-unsigned short int *shortIntToFourBlocks(unsigned short int x) {
+uint16_t *shortIntToFourBlocks(uint16_t x) {
     /*
         given a (16 bit) short int x, decompose it into four 4-bit blocks, each
         given in a separate short int, in a 4-element array
     */
-   unsigned short int *A = malloc(4 * sizeof(short int));
+   uint16_t *A = malloc(4 * sizeof(short int));
    for (int i = 0; i < 4; i++)
-   {
         A[i] = (x >> 4*(3 - i)) & 15;
-   }
+
    return A;
-   
 }
 
-unsigned short int shortIntSBox(unsigned short int a) {
+uint16_t shortIntSBox(uint16_t a) {
     /*
         given a = A[0] || A[1] || A[2] || A[3]
         returns u = S[A[0]] || S[A[1]] || S[A[2]] || S[A[3]]
     */
    
     // divide into blocks
-   unsigned short int *A = shortIntToFourBlocks(a);
+   uint16_t *A = shortIntToFourBlocks(a);
     
    // combine back together
    return (S[A[0]] << 12) | (S[A[1]] << 8) | (S[A[2]] << 4) | S[A[3]];
 }
 
-unsigned short int shortIntInvSBox(unsigned short int u) {
+uint16_t shortIntInvSBox(uint16_t u) {
     /*
         given u = U[0] || U[1] || U[2] || U[3]
         returns a = invS[U[0]] || invS[U[1]] || invS[U[2]] || invS[U[3]]
     */
 
     // divide into blocks
-   unsigned short int *U = shortIntToFourBlocks(u);
+   uint16_t *U = shortIntToFourBlocks(u);
     
    // combine bUck together
    return (invS[U[0]] << 12) | (invS[U[1]] << 8) | (invS[U[2]] << 4) | invS[U[3]];
 }
 
-unsigned short int *generateRoundKeys(int numberOfKeys) {
+uint16_t *generateRoundKeys(int numberOfKeys) {
     /*
-        returns ptr to array of numberOfKeys randomly generated unsigned short ints
+        returns ptr to array of numberOfKeys randomly generated uint16_ts
     */
-    unsigned short int *k = malloc(numberOfKeys * sizeof(short int));
+    uint16_t *k = malloc(numberOfKeys * sizeof(short int));
     for (int i = 0; i < numberOfKeys; i++)
-    {
         k[i] = (short) rand();
-    }
+
     return k;
 }
 
-unsigned short int bitPermute(unsigned short int x) {
+uint16_t bitPermute(uint16_t x) {
     /*
     * permutes the bits of x according to P
     */
-    unsigned short int result = 0;
+    uint16_t result = 0;
     for (int i = 15; i >= 0; i--)
     { 
         result <<= 1;
@@ -86,11 +84,11 @@ unsigned short int bitPermute(unsigned short int x) {
     return result;
 }
 
-unsigned short int inverseBitPermute(unsigned short int x) {
+uint16_t inverseBitPermute(uint16_t x) {
     /*
     * permutes the bits of x according to P inverse
     */
-    unsigned short int result = 0;
+    uint16_t result = 0;
     for (int i = 15; i >= 0; i--)
     { 
         result <<= 1;
@@ -100,13 +98,13 @@ unsigned short int inverseBitPermute(unsigned short int x) {
     return result;
 }
 
-unsigned short int encryptCipherFour(unsigned short int message, int roundCount, unsigned short int *keys, bool lastRound) {
+uint16_t encryptCipherFour(uint16_t message, int roundCount, uint16_t *keys, bool lastRound) {
     /*
         given message as int, int roundCount as number of rounds to be iterated over
         and roundCount number of keys, returns encrypted message using CipherFour
     */
 
-   unsigned short int u = message, a, *A;
+   uint16_t u = message, a, *A;
 
    // go through rounds
     for (int i = 0; i < roundCount - 1; i++)
@@ -141,8 +139,8 @@ unsigned short int encryptCipherFour(unsigned short int message, int roundCount,
     return u ^ keys[roundCount];
 }
 
-unsigned short int decryptCipherFour(int cypherText, int roundCount, unsigned short int *keys) {
-    unsigned short int u = cypherText ^ keys[roundCount], *A = shortIntToFourBlocks(u);
+uint16_t decryptCipherFour(int cypherText, int roundCount, uint16_t *keys) {
+    uint16_t u = cypherText ^ keys[roundCount], *A = shortIntToFourBlocks(u);
 
     u = (invS[A[0]] << 12) | (invS[A[1]] << 8) | (invS[A[2]] << 4) | invS[A[3]];
     u ^= keys[roundCount - 1];
@@ -158,25 +156,23 @@ unsigned short int decryptCipherFour(int cypherText, int roundCount, unsigned sh
     return u;
 }
 
-void printBytes(unsigned short int x) {
+void printBytes(uint16_t x) {
     for (int i = sizeof(short int) * 8 - 1; i >= 0 ; i--)
     {
-        if ((x >> i) % 2 == 0) {
+        if ((x >> i) % 2 == 0)
             printf("%d", 0);
-        } else {
+        else
             printf("%d", 1);
-        }
-        if (i % 4 == 0) {
-            printf(" ");
-        }
+
+        if (i % 4 == 0) printf(" ");
     }
 }
 
 typedef struct Structure
 {
     // two messages s.t. after first round their difference is (0, 0, 2, 0)
-    unsigned short int first;
-    unsigned short int second;
+    uint16_t first;
+    uint16_t second;
 } Structure;
 
 
@@ -193,19 +189,20 @@ Structure *findStructures(int s) {
 
     // m_i = (t_0, t_1, i, t_2)
     // randomly choose t_0, t_1, t_2 
-    unsigned short int t = (short) rand();
-    unsigned short int m = (((t >> 4) % 16) << 4) ^ t;
+    uint16_t t = (short) rand();
+    uint16_t m = (((t >> 4) % 16) << 4) ^ t;
 
     // for k_0_nibble, i, j work with the lowest 4 bits
     size_t success_count = 0, try_count = 0;
-    unsigned short int a_0, a_1, m_i, m_j, *pk_0_nibble;
+    // uint16_t a_0, a_1, m_i, m_j, *pk_0_nibble;
+    uint16_t m_i, m_j, *pk_0_nibble;
 
-    for (unsigned short int k_0_nibble = 0; k_0_nibble < 16; k_0_nibble++)
+    for (uint16_t k_0_nibble = 0; k_0_nibble < 16; k_0_nibble++)
     {
         
         success_count = 0;
         try_count = 0;
-        unsigned short int i, j;
+        uint16_t i, j;
         while (success_count < s) {
             i = try_count / 16;
             j = try_count % 16;
@@ -217,14 +214,13 @@ Structure *findStructures(int s) {
             }
 
             // skip i = j
-            if (i == j) {
-                continue;
-            }
+            if (i == j) continue;
             
             m_i = m ^ ((i ^ k_0_nibble) << 4);
             m_j = m ^ ((j ^ k_0_nibble) << 4);
-            pk_0_nibble = (unsigned short int *) &k_0_nibble;
+            pk_0_nibble = (uint16_t *) &k_0_nibble;
             encryptCipherFour(m_i, 2, pk_0_nibble, false);
+
             // now we need P(a_0) ^ P(a_1) = (0, 0, 2, 0) where P is the permutation
             // since it is linear and P(0000 0000 0010 0000) = 0000 0000 0010 0000
             // it is equivalent to a_0 ^ a_1 = (0, 0, 2, 0)
@@ -246,14 +242,14 @@ void firstExercise() {
     // number of rounds
     int r = 10;
     // message to encrypt
-    unsigned short int m = 1232;
+    uint16_t m = 1232;
 
     printf("message: %d\n", m);
 
     // generate round keys
-    unsigned short int *k = generateRoundKeys(r + 1);
+    uint16_t *k = generateRoundKeys(r + 1);
 
-    unsigned short int cypherText = encryptCipherFour(m, r, k, true);
+    uint16_t cypherText = encryptCipherFour(m, r, k, true);
     printf("cypherText: %d\n", cypherText);
     
     printf("decrypted cypherText: %d\n", decryptCipherFour(cypherText, r, k));   
@@ -265,13 +261,13 @@ void secondExercise() {
 
     // use the differential (0, 0, 2, 0) -> ? -> ? -> ? -> (0, 0, 2, 0)
     // (0, 0, 2, 0) = 0000 0000 0010 0000 = 32
-    unsigned short int offset = 32;
+    uint16_t offset = 32;
     
     // number of rounds
     int r = 5;
     
     // generate round keys
-    unsigned short int *k = generateRoundKeys(r + 1);
+    uint16_t *k = generateRoundKeys(r + 1);
 
     for (int i = 0; i < r + 1; i++)
     {
@@ -285,24 +281,13 @@ void secondExercise() {
 
     // initialize the counter for x
     // k_5 = (?, ?, x, ?)
-    unsigned short int *xCounter;
+    uint16_t *xCounter;
     xCounter = malloc(16 * sizeof(short int));
     for (int i = 0; i < 16; i++)
-    {
         xCounter[i] = 0;
-    }
-   
 
-    int successful = 0;
-    int numberOfMessages = 2 << 15;
-    unsigned short int offsetCounter;
-    unsigned short int cypherText;
-    unsigned short int cypherTextOffset;
-    unsigned short int possible_k_r;
-    unsigned short int y_0;
-    unsigned short int y_1;
-    unsigned short int a_0;
-    unsigned short int a_1;
+    int successful = 0 ,numberOfMessages = 2 << 15;
+    uint16_t offsetCounter, cypherText, cypherTextOffset, possible_k_r, y_0, y_1, a_0, a_1;
     for (int counter = 0; counter < numberOfMessages; counter++)
     {
         // offset message
@@ -361,13 +346,13 @@ void thirdExercise() {
 
     // use the differential (0, 0, 2, 0) -> ? -> ? -> ? -> (0, 0, 2, 0)
     // (0, 0, 2, 0) = 0000 0000 0010 0000 = 32
-    unsigned short int offset = 32;
+    uint16_t offset = 32;
 
     // number of rounds
     int r = 5;
     
     // generate round keys
-    unsigned short int *k = generateRoundKeys(r + 1);
+    uint16_t *k = generateRoundKeys(r + 1);
 
     for (int i = 0; i < r + 1; i++)
     {
@@ -381,7 +366,7 @@ void thirdExercise() {
 
     // initialize the counter for x
     // k_5 = (?, ?, x, ?)
-    unsigned short int *xCounter;
+    uint16_t *xCounter;
     xCounter = malloc(16 * sizeof(short int));
     for (int i = 0; i < 16; i++)
     {
@@ -389,9 +374,8 @@ void thirdExercise() {
     }
    
 
-    int successful = 0;
     int numberOfMessages = 2 << 15;
-    unsigned short int offsetCounter, cypherText, cypherTextOffset, possible_k_r, y_0, y_1, a_0, a_1, cypherTextDifference;
+    uint16_t offsetCounter, cypherText, cypherTextOffset, possible_k_r, y_0, y_1, a_0, a_1, cypherTextDifference;
     for (int counter = 0; counter < numberOfMessages; counter++)
     {
         // offset message
@@ -410,9 +394,7 @@ void thirdExercise() {
             cypherTextDifference != 32 &&
             cypherTextDifference != 144 &&
             cypherTextDifference != 160
-        ) {
-            continue;
-        }
+        ) continue;
 
         for (int i = 0; i < 16; i++)
         {
@@ -426,10 +408,7 @@ void thirdExercise() {
             // a_0 + a_1 = u_0 + u_1
             // guessing the correct k_r (i.e. its third block x) will result
             // in a high probability of u_0 + u_1 = (0, 0, 2, 0)
-            if ((a_0 ^ a_1) == 32) {
-                xCounter[i]++;
-            }
-
+            if ((a_0 ^ a_1) == 32) xCounter[i]++;
         }
     }
 
@@ -451,15 +430,15 @@ void fourthExercise() {
 
     Structure *structures = findStructures(s);
 
-    unsigned short int first, second, *pp;
+    uint16_t first, second, *pp;
 
-    for (unsigned short int p = 0; p < 16; p++)
+    for (uint16_t p = 0; p < 16; p++)
     {
         for (int i = 0; i < s; i++)
         {
             first = structures[p * s + i].first;
             second = structures[p * s + i].second;
-            pp = (unsigned short int *) &p;
+            pp = (uint16_t *) &p;
             // assert after first round we get a difference (0, 0, 2, 0)
             assert((encryptCipherFour(first, 2, pp, false) ^ encryptCipherFour(second, 2, pp, false)) == 32);
         }   
@@ -469,7 +448,7 @@ void fourthExercise() {
     int r = 5;
 
     // generate round keys
-    unsigned short int *k = generateRoundKeys(r + 1);
+    uint16_t *k = generateRoundKeys(r + 1);
     for (int i = 0; i < r + 1; i++)
     {
         printf("key k_%d: ", i);
@@ -477,25 +456,21 @@ void fourthExercise() {
         printf("\n");
     }
         
-    unsigned short int cypherText1, cypherText2;
+    uint16_t cypherText1, cypherText2;
         
     // counter for k_0 third nibble k_0_nibble
     size_t *k_0_nibble_counters = malloc(16 * sizeof(size_t));
     for (size_t i = 0; i < 16; i++)
-    {
-            k_0_nibble_counters[i] = 0;
-    }
+        k_0_nibble_counters[i] = 0;
     
     // initialize counters for all nibbles of k_5
     // 4 * 16 = 64 counters, k_5 = (a_0, a_1, a_2, a_3)
     // then first 16 counters correspond to values a_0 = 0000, .... , 1111
     size_t *k_5_nibbles_counters = malloc(64 * sizeof(size_t));
     for (size_t i = 0; i < 64; i++)
-    {
         k_5_nibbles_counters[i] = 0;
-    }
     
-    unsigned short int a_1, a_2, shiftedCypherText1, shiftedCypherText2;
+    uint16_t a_1, a_2, shiftedCypherText1, shiftedCypherText2;
 
     // iterate over all k_0 nibble values
     for (size_t p = 0; p < 16; p++)
@@ -507,7 +482,7 @@ void fourthExercise() {
 
             for (size_t k_5_nibbles_count = 0; k_5_nibbles_count < 4; k_5_nibbles_count++)
             {
-                for (unsigned short int k_5_nibble_guess = 0; k_5_nibble_guess < 16; k_5_nibble_guess++)
+                for (uint16_t k_5_nibble_guess = 0; k_5_nibble_guess < 16; k_5_nibble_guess++)
                 {
                     // k_5_nibble_guess = guess nibble of k_5
                     // k_5_nibbles_count which nibble we are trying to guess
@@ -531,7 +506,7 @@ void fourthExercise() {
     }
     
     printf("k_5_nibbles_counters:\n");
-    for (unsigned short int i = 0; i < 64; i++)
+    for (uint16_t i = 0; i < 64; i++)
     {
         printf("nibble a_%d guess ", i / 16);
         printBytes((i % 16) << 4 * (3 - (i / 16)));
@@ -542,7 +517,7 @@ void fourthExercise() {
     }
 
     printf("\nk_0_nibble_counters:\n");
-    for (unsigned short int p = 0; p < 16; p++)
+    for (uint16_t p = 0; p < 16; p++)
     {
         printf("k_0_nibble_counters guess :");
         printBytes(p << 4);
@@ -556,11 +531,15 @@ int main()
 
     firstExercise();
     printf("\n");
+
     secondExercise();
     printf("\n");
+
     thirdExercise();
     printf("\n");
+
     fourthExercise();
+
     return 0;
 }
 

@@ -1,32 +1,42 @@
-import random
 import os
 import ctypes
-
-from sympy import randprime, is_primitive_root, primitive_root
+import time
 import random
+from sympy import randprime, primitive_root
+import math
 
+# Load shared library
 SHARED_LIBRARY_PATH = os.path.dirname(os.path.abspath(__file__)) + '/../../bin/labwork_final/dl.so'
 lib = ctypes.CDLL(SHARED_LIBRARY_PATH)
 
-# Generate a random prime in a range
-# lower = 1000
-# upper = 5000
-# p = randprime(lower, upper)
-# g = primitive_root(p)
-beta = 10
+# Configure argument and return types for the C function
+lib.solve_dl.argtypes = [ctypes.c_ulonglong, ctypes.c_ulonglong, ctypes.c_ulonglong, ctypes.c_int, ctypes.c_bool]
+lib.solve_dl.restype = ctypes.c_ulonglong
 
-p = 4987
-g = 2
+# Test loop
+test_count = 50
+for i in range(test_count):
+    # Random prime and generator
+    lower = 100000
+    p = randprime(lower, 2*lower)
+    g = primitive_root(p)
+    beta = random.randint(1, p - 1)
 
-# g = 11
-# p = 870871
-# beta = 5872
+    # For fixed test:
+    # p = 2503
+    # g = 3
+    # beta = 2342
 
-dl = lib.solve_dl(g, beta, p, 50, True)
-# dl = lib.solve_dl(11, 5872, 870871, 50, True)
+    # print(f"testing p={p}, g={g}, beta={beta}")
 
-print(f"prime number p={p}, generator g={g}, beta={beta}, dl: {dl}, {pow(g, dl, p)} == {beta}")
+    # Time the call
+    start = time.perf_counter()
+    dl = lib.solve_dl(g, beta, p, int(math.sqrt(lower)), False)
+    elapsed = time.perf_counter() - start
 
-
-
-
+    # Verify result
+    check = pow(g, dl, p)
+    if check != beta:
+        print(f"[FAIL] p={p}, g={g}, beta={beta}, dl={dl}, g^dl % p = {check} != beta")
+    # else:
+    #     print(f"[OK] p={p}, g={g}, beta={beta}, dl={dl} (time: {elapsed:.6f} sec)")

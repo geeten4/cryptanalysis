@@ -96,37 +96,38 @@ void matrix_gaussian_elimination(Matrix* mat, gf_t p) {
     int cols = mat->col_count;
     int pivot_row = 0;
 
-    matrix_mod(mat, p);
+    matrix_mod(mat, p);  // Ensure all entries are mod p
 
     for (int col = 0; col < cols && pivot_row < rows; ++col) {
-        // find pivot
+        // --- Find invertible pivot ---
         int best_row = -1;
+        gf_t inv = -1;
+
         for (int r = pivot_row; r < rows; ++r) {
             gf_t val = matrix_get(mat, r, col);
-            if (val != 0) {
+            inv = mod_inv(val, p);  // Use EEA-based mod_inv
+            if (val != 0 && inv != (gf_t)-1) {
                 best_row = r;
                 break;
             }
         }
 
+        // --- No invertible pivot: skip column ---
         if (best_row == -1) {
-            continue; // no pivot found
+            continue;
         }
 
-        // swap row to the top
+        // --- Swap row to pivot position ---
         if (best_row != pivot_row) {
             Vector* tmp = mat->rows[pivot_row];
             mat->rows[pivot_row] = mat->rows[best_row];
             mat->rows[best_row] = tmp;
         }
 
-        // normalize pivot row
-        gf_t pivot_val = matrix_get(mat, pivot_row, col);
-        if (pivot_val != 1) {
-            matrix_scale_row(mat, pivot_row, mod_inv(pivot_val, p), p);
-        }
+        // --- Normalize pivot row ---
+        matrix_scale_row(mat, pivot_row, inv, p);
 
-        // eliminate below
+        // --- Eliminate entries below pivot ---
         for (int r = pivot_row + 1; r < rows; ++r) {
             gf_t below = matrix_get(mat, r, col);
             if (below != 0) {

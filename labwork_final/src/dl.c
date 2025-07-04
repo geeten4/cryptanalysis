@@ -72,37 +72,50 @@ gf_t solve_dl(gf_t alpha, gf_t beta, gf_t q, int fb_limit, bool verbose) {
         printf("q=%d, alpha=%d, beta=%d\n", q, alpha, beta);
     }
 
-    int rows = 40, cols = fb->size + 1;
-    Matrix* A = matrix_create(rows, cols);
-
-    matrix_add_random_vectors_in_fbasis(A, fb, rows, cols, alpha, q, verbose);
-
     BasisList *factors = BasisList_create(2);
     factor(factors, q-1);
-    // factors = multiply_same_factors(factors);
+    factors = multiply_same_factors(factors);
 
     if (verbose) {
         printf("q-1 factors: ");
         BasisList_print(factors);
     }
 
-    Vector* combined_solution = solve_system_with_crt(A, factors, fb, cols, alpha, factors->size, verbose);
-    
-    if (verbose) {
-        printf("\nCombined solution after CRT: \n");
-        for (size_t i = 0; i < combined_solution->length; i++)
-            printf("log_%d(%d)=%d (mod %d)\n", alpha, BasisList_get(fb, i), vector_get(combined_solution, i), q-1);
-        printf("\n");
+    // sometimes, especially for prime power factors, the matrix A will not have a full rank modulo this
+    // prime power factor, loop until A has full rank modulo all coprime factors
+    // prevent infinite loop
+    int MAX_TRY_COUNT = 100, try_count = 0;
+    while (try_count < MAX_TRY_COUNT) {
+        int rows = 3 * fb->size, cols = fb->size + 1;
+        Matrix* A = matrix_create(rows, cols);
+
+        matrix_add_random_vectors_in_fbasis(A, fb, rows, cols, alpha, q, verbose);
+
+        Vector* combined_solution = solve_system_with_crt(A, factors, fb, cols, alpha, factors->size, verbose);
+        
+        if (verbose) {
+            printf("\nCombined solution after CRT: \n");
+            for (size_t i = 0; i < combined_solution->length; i++)
+                printf("log_%d(%d)=%d (mod %d)\n", alpha, BasisList_get(fb, i), vector_get(combined_solution, i), q-1);
+            printf("\n");
+        }
+
+        gf_t discrete_log = find_dl_from_combined_solution(combined_solution, fb, alpha, beta, q, cols, verbose);
+
+        if (verbose) {
+            printf("Discrete logarithm: %d\n", discrete_log);
+            printf("Checking %d = beta = alpha ^ discrete_log = %d ^ %d = %d\n", beta, alpha, discrete_log, mod_pow(alpha, discrete_log, q));
+        }
+
+        if (mod_pow(alpha, discrete_log, q) == beta)
+            return discrete_log;
+        else
+            try_count++;
+
+        matrix_free(A);
     }
 
-    gf_t discrete_log = find_dl_from_combined_solution(combined_solution, fb, alpha, beta, q, cols, verbose);
-
-    if (verbose) {
-        printf("Discrete logarithm: %d\n", discrete_log);
-        printf("Checking %d = beta = alpha ^ discrete_log = %d ^ %d = %d\n", beta, alpha, discrete_log, mod_pow(alpha, discrete_log, q));
-    }
-
-    return discrete_log;
+    return 0;
 }
 
 // Check if g is a generator modulo p
