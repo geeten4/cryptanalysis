@@ -17,59 +17,51 @@ $ chmod u+x cryptanalysis.sh
 
 ## Third homework
 
-generate random permutation with `/labwork3/python/gen_random_permutation.py` via
+Generate a random permutation with `./labwork3/python/gen_random_permutation.py` via
 
-```bash
-
+<pre lang="markdown">
 python3 ./labwork3/python/gen_random_permutation.py
+</pre>
 
-```
-
-and it stores a random permutation of GF(2^12) in `/labwork3/data/random_permutation.txt` along
-with its inverse in `/labwork3/data/random_inverse_permutation.txt`
+The script stores a random permutation of GF(2^12) in `./labwork3/data/random_permutation.txt` along
+with its inverse in `./labwork3/data/random_inverse_permutation.txt`
 
 #### NOTE
-regenerating the permutation means the message-ciphertext pairs are incompatible with the permutation,
+Regenerating the permutation means the message-ciphertext pairs are incompatible with the permutation,
 we have to regenerate message-ciphertext pairs as well
 
-To generate random message-ciphertext pairs, first compile the encryption functions to a shared .so object
+To generate random message-ciphertext pairs, first compile the encryption functions to a shared .so object via
 
-```bash
-
+<pre lang="markdown">
 make encryption
+</pre>
 
-```
-
-this compiles to a shared object `/bin/encryption.so`
+which compiles to a shared object `./bin/labwork3/encryption.so`
 
 # TODO: accept t as parametr for python script
 
-and run the python script for random pairs generation
+Now you can run the python script for random message-ciphertext pairs generation
 
-```bash
-
+<pre lang="markdown">
 python3 ./labwork3/python/gen_message_ciphertext_pairs.py
+</pre>
 
-```
-
-it stores the pairs in `/labwork3/data/message_ciphertext.csv`
+which stores the pairs in `./labwork3/data/message_ciphertext.csv`
 
 
 
 # Final homework
 
-run tests: compile to shared object using
+Extensive tests are implement for the final Discrete logarithm solver. First compile to a shared .so object via
 
-```bash
-
+<pre lang="markdown">
 make dl
+</pre>
 
-```
+which creates a dl.so shared object file in `./bin/labwork_final/`. This is used to run python tests. Run them via
 
-which creates a dl.so shared object file in bin. This is used to run python tests. Run them via
+<pre lang="markdown">
+python3 ./labwork_final/python/tests.py
+</pre>
 
-```bash
-
-python3 labwork_final/python/tests.py
-
-```
+which shows all the available tests to be run.
