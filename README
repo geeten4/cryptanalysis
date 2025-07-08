@@ -1,18 +1,25 @@
-Small project for Cryptanalysis course
+# HW project for Cryptanalysis course
 
-To compile using gcc and run the labworks, use
+To compile using gcc and run the labworks, use a shortcut
 
-```bash
+<pre lang="markdown"> ```
 
-cryptanalysis.sh X
+$ ./cryptanalysis.sh X
 
-```
+``` </pre>
 
-where X is the number of the corresponding labwork, or the keyword "final" for the final HW
+where X is the number of the corresponding labwork, or the keyword "final" for the final HW.
+(If shell script cannot be run due to permissions, change them via)
 
 
+<pre lang="markdown"> ```
 
-# Third homework
+$ chmod u+x cryptanalysis.sh
+
+``` </pre>
+
+
+## Third homework
 
 generate random permutation with `/labwork3/python/gen_random_permutation.py` via
 
@@ -25,7 +32,7 @@ python3 ./labwork3/python/gen_random_permutation.py
 and it stores a random permutation of GF(2^12) in `/labwork3/data/random_permutation.txt` along
 with its inverse in `/labwork3/data/random_inverse_permutation.txt`
 
-## NOTE
+#### NOTE
 regenerating the permutation means the message-ciphertext pairs are incompatible with the permutation,
 we have to regenerate message-ciphertext pairs as well
 
