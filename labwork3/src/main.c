@@ -15,6 +15,9 @@
 
 
 int main() {
+    // prints out count of falsely suggested keys for each A=a
+    bool verbose = false;
+
     srand(time(NULL));   // Initialization, should only be called once.
 
     // assert the permutation F is in fact a permutation
@@ -66,8 +69,10 @@ int main() {
         // guess A = a, run through all values of k_1=i, compute m_i = decrypt(a, i),
         // if m_i is in base_m_c tree, then we find c_i, find b_i = decrypt(c_i, i)
         // and store the values (b_i, i) in the tree base_b_i
-
         gf2_12 a = rand_gf2_12();
+
+        // count how many keys we are actually trying against all the message-ciphertext pairs
+        size_t false_key_count = 0;
 
         for (size_t i = 0; i < 4096; i++)
         {
@@ -107,7 +112,9 @@ int main() {
             binode = findBIndexNode(&base_b_i, b_j);
             if (binode == 0)
                 continue;
-            
+
+            false_key_count++;
+
             // we found a b_j s.t. b_j = decrypt(a, j)
             // test if EDE_2(m, i, j) = c holds for all 
             // message-cipthertext pairs in base_m_c
@@ -124,6 +131,9 @@ int main() {
                 }
             }
         }
+
+        if (verbose)
+            printf("Number of false keys given by guess A=%d is %ld\n", a, false_key_count);
 
         freeBIndex(&base_b_i);
         base_b_i.b = 0;

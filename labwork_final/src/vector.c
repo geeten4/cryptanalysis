@@ -104,7 +104,7 @@ void vector_free(Vector* vec) {
 void vector_print(const Vector* vec) {
     printf("(");
     for (int i = 0; i < vec->size; ++i) {
-        printf("[%d] = %d", vec->entries[i].index, vec->entries[i].value);
+        printf("[%d] = %ld", vec->entries[i].index, vec->entries[i].value);
         if (i < vec->size - 1) printf(", ");
     }
     printf(")\n");
@@ -116,7 +116,7 @@ void vector_print_with_zeros(const Vector* vec) {
         int found = 0;
         for (int j = 0; j < vec->size; ++j) {
             if (vec->entries[j].index == i) {
-                printf("%d", vec->entries[j].value);
+                printf("%ld", vec->entries[j].value);
                 found = 1;
                 break;
             }
@@ -169,34 +169,6 @@ static inline gf_t mod(gf_t a, gf_t m) {
     return r < 0 ? r + m : r;
 }
 
-// gf_t* extended_euclidean_algorithm(gf_t a, gf_t b) {
-//     gf_t s0 = 1, s1 = 0;
-//     gf_t t0 = 0, t1 = 1;
-//     gf_t r0 = a, r1 = b;
-
-//     while (r1 != 0) {
-//         gf_t q = r0 / r1;
-
-//         gf_t r_temp = r0 - q * r1;
-//         r0 = r1;
-//         r1 = r_temp;
-
-//         gf_t s_temp = s0 - q * s1;
-//         s0 = s1;
-//         s1 = s_temp;
-
-//         gf_t t_temp = t0 - q * t1;
-//         t0 = t1;
-//         t1 = t_temp;
-//     }
-
-//     gf_t* result = malloc(3 * sizeof(gf_t));
-//     result[0] = r0;  // gcd(a, b)
-//     result[1] = s0;  // x such that a*x + b*y = gcd
-//     result[2] = t0;  // y such that a*x + b*y = gcd
-//     return result;
-// }
-
 gf_t* extended_euclidean_algorithm(gf_t a, gf_t b) {
     gf_t s0 = 1, s1 = 0;
     gf_t t0 = 0, t1 = 1;
@@ -224,6 +196,34 @@ gf_t* extended_euclidean_algorithm(gf_t a, gf_t b) {
     result[2] = t0;  // y such that a*x + b*y = gcd
     return result;
 }
+
+// gf_t* extended_euclidean_algorithm(gf_t a, gf_t b) {
+//     gf_t s0 = 1, s1 = 0;
+//     gf_t t0 = 0, t1 = 1;
+//     gf_t r0 = a, r1 = b;
+
+//     while (r1 != 0) {
+//         gf_t q = r0 / r1;
+
+//         gf_t r_temp = r0 - q * r1;
+//         r0 = r1;
+//         r1 = r_temp;
+
+//         gf_t s_temp = s0 - q * s1;
+//         s0 = s1;
+//         s1 = s_temp;
+
+//         gf_t t_temp = t0 - q * t1;
+//         t0 = t1;
+//         t1 = t_temp;
+//     }
+
+//     gf_t* result = malloc(3 * sizeof(gf_t));
+//     result[0] = r0;  // gcd(a, b)
+//     result[1] = s0;  // x such that a*x + b*y = gcd
+//     result[2] = t0;  // y such that a*x + b*y = gcd
+//     return result;
+// }
 
 // void crt_combine_vectors(Vector** vectors, BasisList* moduli, int n, Vector* v) {
 //     int vector_dim = vectors[0]->length;
@@ -320,7 +320,7 @@ void crt_combine_vectors(Vector** vectors, BasisList* moduli, int n, Vector* res
 
             if (gcd != 1) {
                 // moduli not coprime; CRT invalid
-                fprintf(stderr, "Error: moduli %lld and %lld are not coprime (gcd = %lld)\n", M, mk, gcd);
+                fprintf(stderr, "Error: moduli %ld and %ld are not coprime (gcd = %ld)\n", M, mk, gcd);
                 // Handle error appropriately here (e.g., abort or skip)
                 return;
             }

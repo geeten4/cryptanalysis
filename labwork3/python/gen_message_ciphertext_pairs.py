@@ -2,7 +2,7 @@ import random
 import os
 import ctypes
 
-SHARED_LIBRARY_PATH = os.path.dirname(os.path.abspath(__file__)) + '/../../bin/encryption.so'
+SHARED_LIBRARY_PATH = os.path.dirname(os.path.abspath(__file__)) + '/../../bin/labwork3/encryption.so'
 DEST_FILE_MESSAGE_CIPHERTEXT_PAIRS = os.path.dirname(os.path.abspath(__file__)) + '/../data/message_ciphertext.csv'
 
 # Load the shared library

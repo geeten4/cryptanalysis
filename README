@@ -6,7 +6,7 @@ To compile using gcc and run the labworks, use
 cryptanalysis.sh X
 ```
 
-where X is the number of the corresponding labwork
+where X is the number of the corresponding labwork, or the keyword "final" fro the final HW
 
 
 # Third homework

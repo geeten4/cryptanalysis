@@ -31,9 +31,9 @@ Vector* solve_system_with_crt(Matrix* A, BasisList *factors, BasisList *fb, int 
         solutions[i] = sol;
 
         if (verbose) {
-            printf("\nPartial solution for CRT mod %d: \n", m);
+            printf("\nPartial solution for CRT mod %ld: \n", m);
             for (size_t i = 0; i < sol->length; i++)
-                printf("log_%d(%d)=%d (mod %d)\n", alpha, BasisList_get(fb, i), vector_get(sol, i), m);
+                printf("log_%ld(%ld)=%ld (mod %ld)\n", alpha, BasisList_get(fb, i), vector_get(sol, i), m);
             printf("\n");
         }
 
@@ -56,7 +56,7 @@ gf_t find_dl_from_combined_solution(Vector* combined_solution, BasisList* fb, gf
     }
 
     if (verbose) {
-        printf("Found s=%d s.t. beta * alpha ^ s = %d * %d ^ %d = %d (mod %d) factors in the factor basis as:\n", s, beta, alpha, s, mod_mul(beta, mod_pow(alpha, s, q), q), q);
+        printf("Found s=%ld s.t. beta * alpha ^ s = %ld * %ld ^ %ld = %ld (mod %ld) factors in the factor basis as:\n", s, beta, alpha, s, mod_mul(beta, mod_pow(alpha, s, q), q), q);
         vector_print_with_zeros(s_vec);
         printf("\n");
     }
@@ -69,7 +69,7 @@ gf_t solve_dl(gf_t alpha, gf_t beta, gf_t q, int fb_limit, bool verbose) {
 
     if (verbose) {
         BasisList_print(fb);
-        printf("q=%d, alpha=%d, beta=%d\n", q, alpha, beta);
+        printf("q=%ld, alpha=%ld, beta=%ld\n", q, alpha, beta);
     }
 
     BasisList *factors = BasisList_create(2);
@@ -96,15 +96,15 @@ gf_t solve_dl(gf_t alpha, gf_t beta, gf_t q, int fb_limit, bool verbose) {
         if (verbose) {
             printf("\nCombined solution after CRT: \n");
             for (size_t i = 0; i < combined_solution->length; i++)
-                printf("log_%d(%d)=%d (mod %d)\n", alpha, BasisList_get(fb, i), vector_get(combined_solution, i), q-1);
+                printf("log_%ld(%ld)=%ld (mod %ld)\n", alpha, BasisList_get(fb, i), vector_get(combined_solution, i), q-1);
             printf("\n");
         }
 
         gf_t discrete_log = find_dl_from_combined_solution(combined_solution, fb, alpha, beta, q, cols, verbose);
 
         if (verbose) {
-            printf("Discrete logarithm: %d\n", discrete_log);
-            printf("Checking %d = beta = alpha ^ discrete_log = %d ^ %d = %d\n", beta, alpha, discrete_log, mod_pow(alpha, discrete_log, q));
+            printf("Discrete logarithm: %ld\n", discrete_log);
+            printf("Checking %ld = beta = alpha ^ discrete_log = %ld ^ %ld = %ld\n", beta, alpha, discrete_log, mod_pow(alpha, discrete_log, q));
         }
 
         if (mod_pow(alpha, discrete_log, q) == beta)

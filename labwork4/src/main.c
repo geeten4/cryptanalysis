@@ -76,10 +76,9 @@ void secondExercise() {
                 }
     
                 set_subtract(possible_keys, keys_to_remove);
-    
             }
-            
         }
+
         printf("Remaining possible key count: %d\n", possible_keys->size);
     }
     
@@ -101,15 +100,13 @@ void firstExercise() {
         printf("\n");
     }
 
-    
     KeyPairSet *possible_keys = create_keypair_set(), *keys_to_remove = create_keypair_set();
-    // vector space containing of combinantions of a_1, a_2, a_3
+
+    // vector space containing combinantions of a_1, a_2, a_3
     gf2_11 *V = linear_span(linearly_indep_vectors());
     
-    // for (gf2_11 key3 = 0; key3 < 0; key3++)
     for (gf2_11 key3 = 0; key3 < FIELD_SIZE; key3++)
     {
-        // for (gf2_11 key4 = 0; key4 < 0; key4++)
         for (gf2_11 key4 = 0; key4 < FIELD_SIZE; key4++)
         {   
             if (check_keys(V, keys, roundCount, key3, key4)) {
@@ -122,14 +119,19 @@ void firstExercise() {
     printf("Possible key pairs remaining: %d\n", possible_keys->size);
     
     while (possible_keys->size > 1) {
+        // generate new linear span of vectors a'_1, a'_2, a'_3
         V = linear_span(linearly_indep_vectors());
         for (size_t i = 0; i < possible_keys->size; i++)
         {
             KeyPair *kp = possible_keys->data[i];
             if (!check_keys(V, keys, roundCount, kp->key1, kp->key2)) {
+                // using the guess for two last keys, decrypt last two rounds, if they are correct,
+                // the partially decrypted pairs [V[j] || 0] must all sum to zero
+                // if not, key guesses are not correct, remove then from possible_keys
                 keypair_set_add(keys_to_remove, kp->key1, kp->key2);
             }
         }
+
         keypair_set_subtract(possible_keys, keys_to_remove);
         printf("Possible key pairs remaining: %d\n", possible_keys->size);
     }
