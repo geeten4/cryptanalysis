@@ -215,4 +215,4 @@ $(BUILD_DIR_final)/%_shared.o: $(SRC_DIR_final)/%.c
 # cleaning
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR3)/*.o $(BUILD_DIR3)/*.so $(TARGET3) $(BUILD_DIR4)/*.o $(TARGET4) $(BUILD_DIR5)/*.o $(TARGET5) $(BUILD_DIR_FINAL)/*.o $(TARGET_FINAL) $(DL_TARGET)
+	rm -rf $(BUILD_DIR1)/*.o $(TARGET1) $(BUILD_DIR2)/*.o $(TARGET2) $(BUILD_DIR3)/*.o $(BUILD_DIR3)/*.so $(TARGET3) $(BUILD_DIR4)/*.o $(TARGET4) $(BUILD_DIR5)/*.o $(TARGET5) $(BUILD_DIR_final)/*.o $(TARGET_final) $(DL_TARGET)

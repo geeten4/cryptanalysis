@@ -99,7 +99,7 @@ void matrix_gaussian_elimination(Matrix* mat, gf_t p) {
     matrix_mod(mat, p);  // Ensure all entries are mod p
 
     for (int col = 0; col < cols && pivot_row < rows; ++col) {
-        // --- Find invertible pivot ---
+        // Find invertible pivot
         int best_row = -1;
         gf_t inv = -1;
 
@@ -112,22 +112,22 @@ void matrix_gaussian_elimination(Matrix* mat, gf_t p) {
             }
         }
 
-        // --- No invertible pivot: skip column ---
+        // No invertible pivot: skip column
         if (best_row == -1) {
             continue;
         }
 
-        // --- Swap row to pivot position ---
+        // Swap row to pivot position
         if (best_row != pivot_row) {
             Vector* tmp = mat->rows[pivot_row];
             mat->rows[pivot_row] = mat->rows[best_row];
             mat->rows[best_row] = tmp;
         }
 
-        // --- Normalize pivot row ---
+        // Normalize pivot row
         matrix_scale_row(mat, pivot_row, inv, p);
 
-        // --- Eliminate entries below pivot ---
+        // Eliminate entries below pivot
         for (int r = pivot_row + 1; r < rows; ++r) {
             gf_t below = matrix_get(mat, r, col);
             if (below != 0) {

@@ -2,19 +2,24 @@ Small project for Cryptanalysis course
 
 To compile using gcc and run the labworks, use
 
-```console
+```bash
+
 cryptanalysis.sh X
+
 ```
 
-where X is the number of the corresponding labwork, or the keyword "final" fro the final HW
+where X is the number of the corresponding labwork, or the keyword "final" for the final HW
+
 
 
 # Third homework
 
 generate random permutation with `/labwork3/python/gen_random_permutation.py` via
 
-```
+```bash
+
 python3 ./labwork3/python/gen_random_permutation.py
+
 ```
 
 and it stores a random permutation of GF(2^12) in `/labwork3/data/random_permutation.txt` along
@@ -26,8 +31,10 @@ we have to regenerate message-ciphertext pairs as well
 
 To generate random message-ciphertext pairs, first compile the encryption functions to a shared .so object
 
-```
+```bash
+
 make encryption
+
 ```
 
 this compiles to a shared object `/bin/encryption.so`
@@ -36,11 +43,15 @@ this compiles to a shared object `/bin/encryption.so`
 
 and run the python script for random pairs generation
 
-```
+```bash
+
 python3 ./labwork3/python/gen_message_ciphertext_pairs.py
+
 ```
 
 it stores the pairs in `/labwork3/data/message_ciphertext.csv`
+
+
 
 # Final homework
 

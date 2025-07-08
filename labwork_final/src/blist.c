@@ -64,8 +64,7 @@ void BasisList_free(BasisList *list) {
 void BasisList_print(BasisList *list) {
     printf("{");
     for (size_t i = 0; i < list->size; i++)
-    {
-        printf("%d, ", BasisList_get(list, i));
-    }
+        printf("%ld, ", BasisList_get(list, i));
+
     printf("}\n");
 }

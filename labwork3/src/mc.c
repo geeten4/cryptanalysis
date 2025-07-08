@@ -59,10 +59,6 @@ void printMessageCiphertextNode(MessageCiphertextNode *node) {
 int testMessageCiphertextAgainstKeys(MessageCiphertextNode *baseNode, gf2_12 key1, gf2_12 key2) {
     // returns 0 if key1 and key2 work for all message-ciphertext pairs in baseNode
     // returns 1 otherwise
-    // printf("\ntestMessageCiphertextAgainstKeys\n");
-    // printf("baseNode->message: %d\n", baseNode->message);
-    // printf("baseNode->ciphertext: %d\n", baseNode->ciphertext);
-    // printf("EDE_2(%d, %d, %d) == %d: %d\n", baseNode->message, key1, key2, baseNode->ciphertext, EDE_2(baseNode->message, key1, key2) == baseNode->ciphertext);
     if (EDE_2(baseNode->message, key1, key2) != baseNode->ciphertext)
         return 1;
 
@@ -131,7 +127,6 @@ MessageCipherTextBaseWithKeys *readMessageCiphertextTreeFromFile(FILE *file) {
     // read message-ciphertext pairs
     while (getline(&line, &len, file) != -1) {
         sscanf(line, "%d,%d", &m, &c);
-        // printf("message: %d, ciphertext: %d\n", m, c);
         addMessage(base_m_c, (gf2_12)m, (gf2_12)c);
     }
 

@@ -3,6 +3,10 @@ import os
 from sympy import randprime, is_primitive_root, primitive_root, mod_inverse
 import random
 
+"""
+    Module for helper functions during debugging
+"""
+
 q=152183
 alpha=5
 beta=90912

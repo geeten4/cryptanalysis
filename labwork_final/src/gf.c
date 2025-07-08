@@ -20,10 +20,6 @@ gf_t mod_sub(gf_t a, gf_t b, gf_t p) {
     return res;
 }
 
-// gf_t mod_inv(gf_t a, gf_t p) {
-//     return mod_pow(a, p - 2, p);
-// }
-
 gf_t mod_inv(gf_t a, gf_t m) {
     gf_t t = 0, new_t = 1;
     gf_t r = m, new_r = a;

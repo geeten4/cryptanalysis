@@ -43,15 +43,4 @@ void crt_combine_vectors(Vector** vectors, BasisList* moduli, int n, Vector* v);
 gf_t* extended_euclidian_algorithm(gf_t a, gf_t b);
 gf_t vector_dot_product_mod(Vector* v, Vector* w, gf_t p);
 
-// utilities
-// bool vector_has_zero_entries(Vector* vec);
-
 #endif // VECTOR_H
-
-// factor basis
-// fb_t Vector_express_in_fbasis(Vector *v, BasisList *fb, fb_t n);
-// fb_t Vector_multiply_with_fbasis(Vector *v, BasisList *fb);
-
-// linear manipulation
-// void Vector_scale(Vector *v, fb_t c, gf_t p);  // multiply v by c modulo p
-// void Vector_add_vector_multiple(Vector *v, fb_t c, Vector *w, gf_t p);  // to v add c*w modulo p

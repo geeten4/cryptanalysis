@@ -20,6 +20,7 @@ int main() {
 
     fb_t fb_limit = 15;
 
+    // Testing constants
     // gf_t q = 14087, alpha = 5, beta = 5872;  // numbers from Table 4
     // gf_t q = 19079, alpha = 23, beta = 5872;  // 19078 is a product of two distinct primes, 23 is a generator
     // gf_t q = 19087, alpha = 37, beta = 5872;  // 19087 is a product of three distinct primes, 37 is a generator
@@ -29,14 +30,12 @@ int main() {
     // gf_t q = 152183, alpha = 5, beta=90912;
     // gf_t q = 4987, alpha = 2, beta = 10;
     gf_t q = 199687, alpha = 3, beta = 16916;
-    // q = 23250037;
-    // 831867923631411555738439410809
 
     printf("is_generator(alpha, q): %d\n", is_generator(alpha, q));
 
     gf_t dl = solve_dl(alpha, beta, q, fb_limit, true);
 
-    printf("dl: %ld\n, mod_pow(alpha, discrete_log, q) == beta: %d\n", dl, mod_pow(alpha, dl, q) == beta);
+    printf("dl=%ld\nmod_pow(alpha, discrete_log, q) == beta: %d\n", dl, mod_pow(alpha, dl, q) == beta);
 
     return 0;
 }

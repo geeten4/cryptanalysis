@@ -6,7 +6,7 @@
 void factor(BasisList* bl, gf_t n) {
     // factors n and stores factors into bl
     if (n <= 1) {
-        printf("No factors for %d\n", n);
+        printf("No factors for %ld\n", n);
         return;
     }
 
