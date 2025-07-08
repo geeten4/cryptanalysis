@@ -192,6 +192,10 @@ void firstExercise() {
     /*
         Implement encryption and decryption by CipherD defined in [3, p. 137– 139]. (Please do both 4 and 5 rounds.)
     */
+
+    // Labwork 2. (i)
+    printf("Labwork #2 (i): Implement encryption and decryption byCipherD:\n");
+
     uint16_t *keys, message, cypher;
     int numberOfRounds = 5;
     keys = generateRoundKeys(numberOfRounds + 1);
@@ -208,9 +212,16 @@ void secondExercise() {
         
         Identical to experiment in Fig. 7.7 []
     */
-    size_t guessedCorrectly = 0;
-    uint16_t *keys, m, y, a, mask;
+
+    // Labwork 2. (ii)
+    printf("Labwork #2 (ii): Implement linear attack:\n");
+
+
+    // use the (iterative) linear characteristic (8 0 0 0) -R-> (8 0 0 0)
+    uint16_t *keys, m, y, a, mask = (uint16_t ) 32768;
+
     int numberOfRounds = 5, randomMessageCount = 1000, experimentCount = 100;
+    size_t guessedCorrectly = 0;
     for (size_t experimentCounter = 0; experimentCounter < experimentCount; experimentCounter++)
     {
         // initialize counters for the last key
@@ -227,7 +238,6 @@ void secondExercise() {
             // encrypt
             y = encryptCipherD(m, numberOfRounds, keys, true);
 
-            mask = (uint16_t ) 32768;
             for (size_t lastKeyNibble = 0; lastKeyNibble < 16; lastKeyNibble++)
             {
                 // work the round backwards
@@ -248,6 +258,7 @@ int main() {
     srand(time(NULL));   // Initialization, should only be called once.
 
     firstExercise();
+    printf("\n");
 
     secondExercise();
 

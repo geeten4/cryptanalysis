@@ -168,6 +168,17 @@ void printBytes(uint16_t x) {
     }
 }
 
+int arrayMaxValIndex(size_t *array, int length, int start_index) {
+    int maxIndex = start_index;
+    for (size_t i = start_index; i < length + start_index; i++)
+    {
+        if (array[i] > array[maxIndex])
+            maxIndex = i;
+    }
+
+    return maxIndex;
+}
+
 typedef struct Structure
 {
     // two messages s.t. after first round their difference is (0, 0, 2, 0)
@@ -286,7 +297,7 @@ void secondExercise() {
     for (int i = 0; i < 16; i++)
         xCounter[i] = 0;
 
-    int successful = 0 ,numberOfMessages = 2 << 15;
+    int successful = 0, numberOfMessages = 2 << 15;
     uint16_t offsetCounter, cypherText, cypherTextOffset, possible_k_r, y_0, y_1, a_0, a_1;
     for (int counter = 0; counter < numberOfMessages; counter++)
     {
@@ -374,7 +385,7 @@ void thirdExercise() {
     }
    
 
-    int numberOfMessages = 2 << 15;
+    int numberOfMessages = 2 << 15, filteredMessagesCount = 0;
     uint16_t offsetCounter, cypherText, cypherTextOffset, possible_k_r, y_0, y_1, a_0, a_1, cypherTextDifference;
     for (int counter = 0; counter < numberOfMessages; counter++)
     {
@@ -396,6 +407,8 @@ void thirdExercise() {
             cypherTextDifference != 160
         ) continue;
 
+        filteredMessagesCount++;
+
         for (int i = 0; i < 16; i++)
         {
             // try all possible values of x as third block of k_5 = (?, ?, x, ?)
@@ -412,6 +425,8 @@ void thirdExercise() {
         }
     }
 
+    printf("Filtered %d out of %d messages.\n", filteredMessagesCount, numberOfMessages);
+
     for (int i = 0; i < 16; i++)
     {
         printf("possible third nibble of key k_5: ");
@@ -420,109 +435,145 @@ void thirdExercise() {
     }
 }
 
-void fourthExercise() {
+void fourthExercise(bool verbose) {
     // Labwork 1.(iv)
     printf("Labwork #1 (iv): Implement truncated differential attack\n");
 
     size_t s = 3;
 
-    printf("Using block size s: %ld\n", s);
+    printf("Using block size s: %ld i.e. %ld of chosen plaintext\n", s, s * 16);
 
-    Structure *structures = findStructures(s);
+    // if k_5 = (a_0, a_1, a_2, a_3), at position i, count how many times a_i had the highest bias
+    size_t k_5_nibbles_highest_bias[4] = {0};
 
-    uint16_t first, second, *pp;
+    // count how many times third nibble of k_0 had the highest bias
+    size_t k_0_nibble_highest_bias = 0;
 
-    for (uint16_t p = 0; p < 16; p++)
+    size_t experimentCount = 100;
+    for (size_t experimentCounter = 0; experimentCounter < experimentCount; experimentCounter++)
     {
-        for (int i = 0; i < s; i++)
+
+        Structure *structures = findStructures(s);
+
+        uint16_t first, second, *pp;
+
+        for (uint16_t p = 0; p < 16; p++)
         {
-            first = structures[p * s + i].first;
-            second = structures[p * s + i].second;
-            pp = (uint16_t *) &p;
-            // assert after first round we get a difference (0, 0, 2, 0)
-            assert((encryptCipherFour(first, 2, pp, false) ^ encryptCipherFour(second, 2, pp, false)) == 32);
-        }   
-    }
-    
-    // number of rounds
-    int r = 5;
-
-    // generate round keys
-    uint16_t *k = generateRoundKeys(r + 1);
-    for (int i = 0; i < r + 1; i++)
-    {
-        printf("key k_%d: ", i);
-        printBytes(k[i]);
-        printf("\n");
-    }
-        
-    uint16_t cypherText1, cypherText2;
-        
-    // counter for k_0 third nibble k_0_nibble
-    size_t *k_0_nibble_counters = malloc(16 * sizeof(size_t));
-    for (size_t i = 0; i < 16; i++)
-        k_0_nibble_counters[i] = 0;
-    
-    // initialize counters for all nibbles of k_5
-    // 4 * 16 = 64 counters, k_5 = (a_0, a_1, a_2, a_3)
-    // then first 16 counters correspond to values a_0 = 0000, .... , 1111
-    size_t *k_5_nibbles_counters = malloc(64 * sizeof(size_t));
-    for (size_t i = 0; i < 64; i++)
-        k_5_nibbles_counters[i] = 0;
-    
-    uint16_t a_1, a_2, shiftedCypherText1, shiftedCypherText2;
-
-    // iterate over all k_0 nibble values
-    for (size_t p = 0; p < 16; p++)
-    {
-        for (int i = 0; i < s; i++)
-        {
-            cypherText1 = encryptCipherFour(structures[s * p + i].first, r, k, true);
-            cypherText2 = encryptCipherFour(structures[s * p + i].second, r, k, true);
-
-            for (size_t k_5_nibbles_count = 0; k_5_nibbles_count < 4; k_5_nibbles_count++)
+            for (int i = 0; i < s; i++)
             {
-                for (uint16_t k_5_nibble_guess = 0; k_5_nibble_guess < 16; k_5_nibble_guess++)
+                first = structures[p * s + i].first;
+                second = structures[p * s + i].second;
+                pp = (uint16_t *) &p;
+                // assert after first round we get a difference (0, 0, 2, 0)
+                assert((encryptCipherFour(first, 2, pp, false) ^ encryptCipherFour(second, 2, pp, false)) == 32);
+            }   
+        }
+        
+        // number of rounds
+        int r = 5;
+
+        // generate round keys
+        uint16_t *k = generateRoundKeys(r + 1);
+
+        if (verbose) {
+            for (int i = 0; i < r + 1; i++)
+            {
+                printf("key k_%d: ", i);
+                printBytes(k[i]);
+                printf("\n");
+            }
+        }
+            
+        uint16_t cypherText1, cypherText2;
+            
+        // counter for k_0 third nibble k_0_nibble
+        size_t *k_0_nibble_counters = malloc(16 * sizeof(size_t));
+        for (size_t i = 0; i < 16; i++)
+            k_0_nibble_counters[i] = 0;
+        
+        // initialize counters for all nibbles of k_5
+        // 4 * 16 = 64 counters, k_5 = (a_0, a_1, a_2, a_3)
+        // then first 16 counters correspond to values a_0 = 0000, .... , 1111
+        size_t *k_5_nibbles_counters = malloc(64 * sizeof(size_t));
+        for (size_t i = 0; i < 64; i++)
+            k_5_nibbles_counters[i] = 0;
+        
+        uint16_t a_1, a_2, shiftedCypherText1, shiftedCypherText2;
+
+        // iterate over all k_0 nibble values
+        for (size_t p = 0; p < 16; p++)
+        {
+            for (int i = 0; i < s; i++)
+            {
+                cypherText1 = encryptCipherFour(structures[s * p + i].first, r, k, true);
+                cypherText2 = encryptCipherFour(structures[s * p + i].second, r, k, true);
+
+                for (size_t k_5_nibbles_count = 0; k_5_nibbles_count < 4; k_5_nibbles_count++)
                 {
-                    // k_5_nibble_guess = guess nibble of k_5
-                    // k_5_nibbles_count which nibble we are trying to guess
-                    // if guessed correctly, then this characteristic holds
-                    // invS[cypherText1 ^ k_5_nibble_guess] ^ invS[cypherText2 ^ k_5_nibble_guess] = * 0 * *
-                    
-                    // first shift the desired nibble to the end
-                    shiftedCypherText1 = (cypherText1 >> (4 * (3 - k_5_nibbles_count))) % 16;
-                    shiftedCypherText2 = (cypherText2 >> (4 * (3 - k_5_nibbles_count))) % 16;
+                    for (uint16_t k_5_nibble_guess = 0; k_5_nibble_guess < 16; k_5_nibble_guess++)
+                    {
+                        // k_5_nibble_guess = guess nibble of k_5
+                        // k_5_nibbles_count which nibble we are trying to guess
+                        // if guessed correctly, then this characteristic holds
+                        // invS[cypherText1 ^ k_5_nibble_guess] ^ invS[cypherText2 ^ k_5_nibble_guess] = * 0 * *
+                        
+                        // first shift the desired nibble to the end
+                        shiftedCypherText1 = (cypherText1 >> (4 * (3 - k_5_nibbles_count))) % 16;
+                        shiftedCypherText2 = (cypherText2 >> (4 * (3 - k_5_nibbles_count))) % 16;
 
-                    a_1 = shortIntInvSBox(shiftedCypherText1 ^ k_5_nibble_guess);
-                    a_2 = shortIntInvSBox(shiftedCypherText2 ^ k_5_nibble_guess);
+                        a_1 = shortIntInvSBox(shiftedCypherText1 ^ k_5_nibble_guess);
+                        a_2 = shortIntInvSBox(shiftedCypherText2 ^ k_5_nibble_guess);
 
-                    if (((a_1 ^ a_2) & 4) == 0) {
-                        k_5_nibbles_counters[16 * k_5_nibbles_count + k_5_nibble_guess]++;
-                        k_0_nibble_counters[p]++;
+                        if (((a_1 ^ a_2) & 4) == 0) {
+                            k_5_nibbles_counters[16 * k_5_nibbles_count + k_5_nibble_guess]++;
+                            k_0_nibble_counters[p]++;
+                        }
                     }
                 }
             }
         }
-    }
-    
-    printf("k_5_nibbles_counters:\n");
-    for (uint16_t i = 0; i < 64; i++)
-    {
-        printf("nibble a_%d guess ", i / 16);
-        printBytes((i % 16) << 4 * (3 - (i / 16)));
-        printf(" counter is %ld\n", k_5_nibbles_counters[i]);
-        if((i+1) % 16 == 0) {
-            printf("\n");
+
+        if (verbose) {
+            for (uint16_t i = 0; i < 64; i++)
+            {
+                printf("nibble a_%d guess ", i / 16);
+                printBytes((i % 16) << 4 * (3 - (i / 16)));
+                printf(" counter is %ld\n", k_5_nibbles_counters[i]);
+                if((i+1) % 16 == 0) {
+                    printf("\n");
+                }
+            }
+        }
+
+        // count k_0 nibble highest bias
+        uint16_t nibble = (k[0] >> 4) % 16;
+        if (k_0_nibble_counters[nibble] == k_0_nibble_counters[arrayMaxValIndex(k_0_nibble_counters, 16, 0)])
+            k_0_nibble_highest_bias++;
+
+        // count k_5 nibbles highest biases
+        for (size_t i = 0; i < 4; i++)
+        {
+            nibble = (k[r] >> (12 - 4 * i)) % 16;
+            if (k_5_nibbles_counters[nibble + i * 16] == k_5_nibbles_counters[arrayMaxValIndex(k_5_nibbles_counters, 16, i * 16)])
+                k_5_nibbles_highest_bias[i]++;
+        }
+
+        if (verbose) {
+            printf("\nk_0_nibble_counters:\n");
+            for (uint16_t p = 0; p < 16; p++)
+            {
+                printf("k_0_nibble_counters guess :");
+                printBytes(p << 4);
+                printf(" counter is %ld\n", k_0_nibble_counters[p]);
+            }
         }
     }
 
-    printf("\nk_0_nibble_counters:\n");
-    for (uint16_t p = 0; p < 16; p++)
-    {
-        printf("k_0_nibble_counters guess :");
-        printBytes(p << 4);
-        printf(" counter is %ld\n", k_0_nibble_counters[p]);
-    }
+    printf("Third nibble of k_0 had the highest bias %ld out of a %ld experiments\n", k_0_nibble_highest_bias, experimentCount);
+
+    printf("\nk_5_nibbles_counters: let k_5 = (a_0, a_1, a_2, a_3)\n");
+    for (size_t i = 0; i < 4; i++)
+        printf("Nibble a_%ld had the highest bias %ld out of a %ld experiments\n", i, k_5_nibbles_highest_bias[i], experimentCount);
 }
 
 int main()
@@ -538,7 +589,7 @@ int main()
     thirdExercise();
     printf("\n");
 
-    fourthExercise();
+    fourthExercise(false);
 
     return 0;
 }
