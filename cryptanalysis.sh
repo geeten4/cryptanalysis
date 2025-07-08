@@ -11,6 +11,3 @@ else
     echo "Error: LABWORK_NUMBER must be a number or 'final'"
     exit 1
 fi
-
-# compile to shared for cpython: 
-# gcc -shared -o ./labwork3/labwork3.so -fPIC ./labwork3/main.c
