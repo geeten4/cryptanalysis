@@ -38,7 +38,7 @@ make encryption
 
 which compiles to a shared object `./bin/labwork3/encryption.so`
 
-# TODO: accept t as parametr for python script
+##### TODO: accept t as a parameter for python script (now is hard-coded in the script)
 
 Now you can run the python script for random message-ciphertext pairs generation
 
