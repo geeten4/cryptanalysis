@@ -2,21 +2,17 @@
 
 To compile using gcc and run the labworks, use a shortcut
 
-<pre lang="markdown"> ```
-
+<pre lang="markdown">
 $ ./cryptanalysis.sh X
-
-``` </pre>
+</pre>
 
 where X is the number of the corresponding labwork, or the keyword "final" for the final HW.
 (If shell script cannot be run due to permissions, change them via)
 
 
-<pre lang="markdown"> ```
-
+<pre lang="markdown">
 $ chmod u+x cryptanalysis.sh
-
-``` </pre>
+</pre>
 
 
 ## Third homework
