@@ -50,7 +50,7 @@ which stores the pairs in `./labwork3/data/message_ciphertext.csv`
 
 
 
-# Final homework
+## Final homework
 
 Extensive tests are implemented for the final Discrete logarithm solver. First compile to a shared .so object via
 
