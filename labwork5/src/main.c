@@ -145,92 +145,108 @@ void secondExercise() {
         );
     }
 }
+
 void combinedAttack(bool verbose) {
-    size_t round_count = 6;
+    // guesses the diagonal of the first key
+    size_t round_count = 5;
     size_t key_count = round_count + 1;
     aes_state *keys = generate_keys(key_count);
+    keys[key_count - 1][3] = 0;
+    keys[key_count - 1][2] = 0;
+    keys[key_count - 1][1] = 0;
 
-    printf("=== Combined Attack (6 Rounds) ===\n");
-    for (size_t i = 0; i < key_count; i++) {
+    // print keys
+    for (size_t i = 0; i < key_count; i++)
+    {
         printf("k_%ld: ", i);
         print_aes_state(keys[i]);
     }
 
-    Set *possible_keys = create_set(); // Each entry is 32 bits: [first_key_diag (16) | last_key_col (16)]
-    aes_state plaintext = random_aes_state();
-    aes_state first_key_guess = random_aes_state();
-    aes_state last_key_guess = random_aes_state();
+    // print the correct key guess for reference
+    // for optimization, store the eight 4-bit values in a single uint32
+    int keys_guess = eight_gf2_4_to_set_arg_t(
+        keys[key_count - 1][3],
+        keys[key_count - 1][2],
+        keys[key_count - 1][1],
+        keys[key_count - 1][0],
+        keys[0][15],
+        keys[0][10],
+        keys[0][5],
+        keys[0][0]
+    );
+    printf("correct keys guess: %u, last key guess: %u, first key guess: %u\n", keys_guess, keys_guess >> 16, keys_guess % (1 << 16));
 
-    for (uint32_t diag = 0; diag < (1 << 16); diag++) {
-        // Fill diagonal of first key
-        first_key_guess[0] = diag & 0xF;
-        first_key_guess[5] = (diag >> 4) & 0xF;
-        first_key_guess[10] = (diag >> 8) & 0xF;
-        first_key_guess[15] = (diag >> 12) & 0xF;
+    // first store all possible keys, then check which are valid
+    // choose a random plaintext, from this create the structure
+    Set *possible_keys = create_set();
+    aes_state plaintext = random_aes_state(), first_key_guess = random_aes_state(), last_key_guess = random_aes_state();
 
-        for (uint32_t col = 0; col < (1 << 16); col++) {
-            // Fill column of last key
-            last_key_guess[0] = col & 0xF;
-            last_key_guess[1] = (col >> 4) & 0xF;
-            last_key_guess[2] = (col >> 8) & 0xF;
-            last_key_guess[3] = (col >> 12) & 0xF;
+    // iterate over 2^32 possibilities for the diagonal of the first key and the first column of the last key
+    aes_state sum = create_aes_state(), helper = create_aes_state(), cipher = create_aes_state();
+    for (uint64_t key_nibbles = 0; key_nibbles <  ((uint64_t) 1 << 32); key_nibbles++)
+    {
+        // initialize the first key guess 
+        first_key_guess[0] = key_nibbles & 0xF;
+        first_key_guess[5] = (key_nibbles >> 4) & 0xF;
+        first_key_guess[10] = (key_nibbles >> 8) & 0xF;
+        first_key_guess[15] = (key_nibbles >> 12) & 0xF;
 
-            if (check_first_column_zero(plaintext, first_key_guess, keys, round_count) &&
-                check_diagonal_zero(plaintext, last_key_guess, keys, round_count)) {
-                
-                set_arg_t key_combined = (((set_arg_t)diag) << 16) | (set_arg_t)col;
-                set_add(possible_keys, key_combined);
-            }
+        // initialize the last key guess 
+        last_key_guess[0] = (key_nibbles >> 16) & 0xF;
+        last_key_guess[1] = (key_nibbles >> 20) & 0xF;
+        last_key_guess[2] = (key_nibbles >> 24) & 0xF;
+        last_key_guess[3] = (key_nibbles >> 28) & 0xF;
+
+        // first_key_guess = keys[0];
+        // last_key_guess = keys[key_count - 1];
+
+        for (size_t i = 0; i < 16; i++)
+        {
+            // set the form we want to have after the first round
+            copy_aes_state(plaintext, helper);
+            helper[0] = i;
+
+            // rework the first round
+            MixColumnsInv(helper);
+            ShiftRowsInv(helper);
+            SubBytes(helper);
+            AddRoundKey(helper, first_key_guess);
+
+            // now in helper we have the starting state we want to encrypt
+            AES_encrypt(cipher, helper, keys, round_count);
+
+            // now use the second key guess to rework the last round
+            AddRoundKey(cipher, last_key_guess);
+            MixColumnsInv(cipher);
+            ShiftRowsInv(cipher);
+            SubBytes(cipher);
+
+            add_to_state(sum, cipher);
+        }
+
+        // check if the diagonal is zero
+        if (sum[0] == 0 && sum[5] == 0 && sum[10] == 0 && sum[15] == 0) {
+            uint32_t guess = eight_gf2_4_to_set_arg_t(
+                last_key_guess[3],
+                last_key_guess[2],
+                last_key_guess[1],
+                last_key_guess[0],
+                first_key_guess[15],
+                first_key_guess[10],
+                first_key_guess[5],
+                first_key_guess[0]
+            );
+
+            printf("key_nibbles=%ld, guess=%u, last_key_guess=%u, %% done: %f\n",
+                key_nibbles,
+                guess,
+                guess >> 16,
+                (float) key_nibbles / ((uint64_t) 1 << 32));
+            set_add(possible_keys, guess);
         }
     }
 
-    Set *keys_to_remove = create_set();
-
-    while (possible_keys->size > 1) {
-        plaintext = random_aes_state();
-
-        for (size_t i = 0; i < possible_keys->size; i++) {
-            uint32_t diag = possible_keys->data[i] >> 16;
-            uint32_t col = possible_keys->data[i] & 0xFFFF;
-
-            // Reconstruct guesses
-            first_key_guess[0] = diag & 0xF;
-            first_key_guess[5] = (diag >> 4) & 0xF;
-            first_key_guess[10] = (diag >> 8) & 0xF;
-            first_key_guess[15] = (diag >> 12) & 0xF;
-
-            last_key_guess[0] = col & 0xF;
-            last_key_guess[1] = (col >> 4) & 0xF;
-            last_key_guess[2] = (col >> 8) & 0xF;
-            last_key_guess[3] = (col >> 12) & 0xF;
-
-            if (!(check_first_column_zero(plaintext, first_key_guess, keys, round_count) &&
-                  check_diagonal_zero(plaintext, last_key_guess, keys, round_count))) {
-                set_add(keys_to_remove, possible_keys->data[i]);
-            }
-
-            if (verbose) {
-                printf("diag: %04x, col: %04x\n", diag, col);
-            }
-        }
-
-        set_subtract(possible_keys, keys_to_remove);
-        keys_to_remove->size = 0;
-
-        if (verbose)
-            printf("Remaining keys: %d\n", possible_keys->size);
-    }
-
-    if (possible_keys->size == 1) {
-        uint32_t diag = possible_keys->data[0] >> 16;
-        uint32_t col = possible_keys->data[0] & 0xFFFF;
-
-        printf("Final key guess found:\n");
-        printf("Diagonal of first key: %d, %d, %d, %d\n", diag & 0xF, (diag >> 4) & 0xF, (diag >> 8) & 0xF, (diag >> 12) & 0xF);
-        printf("First column of last key: %d, %d, %d, %d\n", col & 0xF, (col >> 4) & 0xF, (col >> 8) & 0xF, (col >> 12) & 0xF);
-    } else {
-        printf("No unique key candidate found.\n");
-    }
+    set_print(possible_keys);
 }
 
 int main() {
@@ -247,7 +263,13 @@ int main() {
     printf("\nSecond exercise: \n");
     secondExercise();
 
-    // TODO: optimize
-    // combinedAttack(true);
+    // TODO: optimize - with current optimization takes ~30 hours to complete due to search over 2^32
+    // memory handling is OK, probably needs a better implementation of AES state
+
+    // TODO: for a correct guess of the last key and some (?) bits of the first key,
+    // we get a better chance of the characteristic holding. Maybe do not iterate over
+    // all of 2^32 possible key bits, but a few factors less
+    printf("\nCombined attack: \n");
+    combinedAttack(true);
 
 }

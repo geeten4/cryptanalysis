@@ -7,8 +7,8 @@
 typedef gf2_4* aes_state;
 
 
-aes_state AES_encrypt(aes_state state, aes_state* keys, size_t round_count);
-aes_state AES_decrypt(aes_state state, aes_state* keys, size_t round_count);
+void AES_encrypt(aes_state cipher, aes_state message, aes_state* keys, size_t round_count);
+void AES_decrypt(aes_state cipher, aes_state message, aes_state* keys, size_t round_count);
 aes_state random_aes_state();
 aes_state *generate_keys(size_t key_count);
 aes_state create_aes_state();
@@ -20,7 +20,7 @@ void AddRoundKey(aes_state state, aes_state roundKey);
 void SubBytes(aes_state state);
 void ShiftRows(aes_state state);
 void ShiftRowsInv(aes_state state);
-aes_state MixColumns(aes_state state);
-aes_state MixColumnsInv(aes_state state);
+void MixColumns(aes_state state);
+void MixColumnsInv(aes_state state);
 
 #endif  // AES_H

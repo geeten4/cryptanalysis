@@ -108,7 +108,7 @@ void ShiftRowsInv(aes_state state) {
     state[15] = helper;
 }
 
-aes_state MixColumns(aes_state state) {
+void MixColumns(aes_state state) {
     aes_state target = create_aes_state();
     target[0]  = Mult[2][state[0]] ^ Mult[1][state[1]]  ^ Mult[1][state[2]]  ^ Mult[3][state[3]];
     target[1]  = Mult[3][state[0]] ^ Mult[2][state[1]]  ^ Mult[1][state[2]]  ^ Mult[1][state[3]];
@@ -126,10 +126,11 @@ aes_state MixColumns(aes_state state) {
     target[13] = Mult[3][state[12]]^ Mult[2][state[13]] ^ Mult[1][state[14]] ^ Mult[1][state[15]];
     target[14] = Mult[1][state[12]]^ Mult[3][state[13]] ^ Mult[2][state[14]] ^ Mult[1][state[15]];
     target[15] = Mult[1][state[12]]^ Mult[1][state[13]] ^ Mult[3][state[14]] ^ Mult[2][state[15]];
-    return target;
+    copy_aes_state(target, state);
+    free_aes_state(target);
 }
 
-aes_state MixColumnsInv(aes_state state) {
+void MixColumnsInv(aes_state state) {
     aes_state target = create_aes_state();
     target[0]  = Mult[14][state[0]]  ^ Mult[9][state[1]]   ^ Mult[13][state[2]]  ^ Mult[11][state[3]];
     target[1]  = Mult[11][state[0]]  ^ Mult[14][state[1]]  ^ Mult[9][state[2]]   ^ Mult[13][state[3]];
@@ -147,41 +148,37 @@ aes_state MixColumnsInv(aes_state state) {
     target[13] = Mult[11][state[12]] ^ Mult[14][state[13]] ^ Mult[9][state[14]]  ^ Mult[13][state[15]];
     target[14] = Mult[13][state[12]] ^ Mult[11][state[13]] ^ Mult[14][state[14]] ^ Mult[9][state[15]];
     target[15] = Mult[9][state[12]]  ^ Mult[13][state[13]] ^ Mult[11][state[14]] ^ Mult[14][state[15]];
-    return target;
+    copy_aes_state(target, state);
+    free_aes_state(target);
 }
 
-aes_state AES_encrypt(aes_state state, aes_state* keys, size_t round_count) {
+void AES_encrypt(aes_state cipher, aes_state message, aes_state* keys, size_t round_count) {
     // r-round AES has r+1 keys
     // c = (ARKₖᵣ ◦ F) ◦ (ARKₖᵣ₋₁ ◦ F) ◦ ... ◦ (ARKₖ₁ ◦ F) ◦ ARKₖ₀(m)
     // F = MC ◦ SR ◦ SB
 
-    aes_state target = create_aes_state();
-    copy_aes_state(state, target);
-    AddRoundKey(target, keys[0]);
+    copy_aes_state(message, cipher);
+    AddRoundKey(cipher, keys[0]);
 
     for (size_t i = 1; i <= round_count; i++)
     {
-        SubBytes(target);
-        ShiftRows(target);
-        target = MixColumns(target);
-        AddRoundKey(target, keys[i]);
+        SubBytes(cipher);
+        ShiftRows(cipher);
+        MixColumns(cipher);
+        AddRoundKey(cipher, keys[i]);
     }
-    
-    return target;
 }
 
-aes_state AES_decrypt(aes_state state, aes_state* keys, size_t round_count) {
-    aes_state target = create_aes_state();
-    copy_aes_state(state, target);
+void AES_decrypt(aes_state cipher, aes_state message, aes_state* keys, size_t round_count) {
+    copy_aes_state(cipher, message);
 
     for (int i = round_count; i > 0 ; i--)
     {
-        AddRoundKey(target, keys[i]);
-        target = MixColumnsInv(target);
-        ShiftRowsInv(target);
-        SubBytes(target);
+        AddRoundKey(message, keys[i]);
+        MixColumnsInv(message);
+        ShiftRowsInv(message);
+        SubBytes(message);
     }
 
-    AddRoundKey(target, keys[0]);
-    return target;
+    AddRoundKey(message, keys[0]);
 }
