@@ -12,6 +12,7 @@
 #include "keypair_set.h"
 
 void secondExercise() {
+    printf("Labwork #4 (ii): Implement a Impossible Differential Attack using a 6-round Feistel structure\n");
     size_t roundCount = 6;
     
     // initialize keys
@@ -72,6 +73,8 @@ void secondExercise() {
                 {
                     key = possible_keys->data[i];
                     if ((c_i_R ^ roundFunction(c_i_L, key)) == (c_j_R ^ roundFunction(c_j_L, key)))
+                        // difference is zero, we encountered the possible differential,
+                        // key guess must be wrong
                         set_add(keys_to_remove, key);
                 }
     
@@ -88,6 +91,7 @@ void secondExercise() {
 }
 
 void firstExercise() {
+    printf("Labwork #4 (i): Implement a Higher Order Differential Attack using a 5-round Feistel structure\n");
     size_t roundCount = 5;
     
     // initialize keys

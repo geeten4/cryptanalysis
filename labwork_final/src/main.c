@@ -16,6 +16,7 @@
 #include "dl.h"
 
 int main() {
+    printf("Labwork Final: Implement a discrete log solver modulo a prime\n");
     srand(time(NULL)); // Seed using current time
 
     fb_t fb_limit = 15;

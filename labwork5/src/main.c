@@ -12,6 +12,7 @@
 
 
 void firstExercise(bool verbose) {
+    printf("Labwork #5 (ii): Recover first column of the last key of a 4-round AES using a structural attack\n");
     // guesses the first column of the last key
 
     size_t round_count = 4;
@@ -86,6 +87,7 @@ void firstExercise(bool verbose) {
 }
 
 void secondExercise() {
+    printf("Labwork #5 (ii): Recover diagonal of the first key of a 4-round AES using a structural attack\n");
     // guesses the diagonal of the first key
     size_t round_count = 4;
     size_t key_count = round_count + 1;
@@ -147,6 +149,7 @@ void secondExercise() {
 }
 
 void combinedAttack(bool verbose) {
+    printf("Labwork #5 (iii): Recover both first column of the last key and diagonal of the first key of a 5-round AES using a structural attack\n");
     // guesses the diagonal of the first key
     size_t round_count = 5;
     size_t key_count = round_count + 1;

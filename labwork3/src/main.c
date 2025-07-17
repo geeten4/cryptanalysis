@@ -15,6 +15,7 @@
 
 
 int main() {
+    printf("Labwork #3: Recover keys using a MITM attack\n");
     // prints out count of falsely suggested keys for each A=a
     bool verbose = false;
 

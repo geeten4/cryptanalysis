@@ -46,6 +46,10 @@ bool check_keys(gf2_11* V, gf2_11* keys, size_t roundCount, gf2_11 key3, gf2_11 
     /*
         given a cipher c, decrypts the last two Feistel rounds using key3 and key4,
         checks if the sum of the decrypted left sides sums to zero, then returns true
+
+        sum_{v \in V} f(v + x) = sum_{v \in V} f(v + f(0 + k_1) + k_2) = 0
+        where f(v + f(0 + k_1) + k_2) is the left value when encrypting (v, 0)
+        before the 4th XOR
     */
    gf2_11 v_checksum = 0;
    for (size_t j = 0; j < 8; j++)
